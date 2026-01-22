@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>净图助手 - PureImage</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin: 0;
+        }
+
+        .lang-switch {
+            display: flex;
+            gap: 8px;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .lang-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .mode-btn {
+            background: #f0f2ff;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 12px 30px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+        }
+
+        .icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f2ff;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            background: #fafafa;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            gap: 15px;
+        }
+
+        .file-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .file-icon {
+            font-size: 1.5em;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .file-meta {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .file-status {
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .file-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .file-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .file-status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .file-ellipsis {
+            text-align: center;
+            padding: 15px;
+            color: #999;
+            font-style: italic;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f0f2ff;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        #singleFileInput, #folderInput {
+            display: none;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .total-info {
+            text-align: center;
+            padding: 10px;
+            background: #f0f2ff;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 data-i18n="title">净图助手</h1>
+            <div class="lang-switch">
+                <button class="lang-btn active" data-lang="zh" onclick="switchLanguage('zh')">中文</button>
+                <button class="lang-btn" data-lang="en" onclick="switchLanguage('en')">English</button>
+            </div>
+        </div>
+
+        <!-- 模式切换 -->
+        <div class="mode-switch">
+            <button class="mode-btn active" id="singleModeBtn" data-i18n="singleMode">📄 单张模式</button>
+            <button class="mode-btn" id="batchModeBtn" data-i18n="batchMode">📁 批量模式</button>
+        </div>
+
+        <!-- 单张模式 -->
+        <div id="singleMode">
+            <div class="upload-area" id="singleDropZone">
+                <div class="icon">📄</div>
+                <h3 data-i18n="dropImage">拖放图片到这里</h3>
+                <p style="color: #999; font-size: 0.9em; margin-top: 10px;" data-i18n="supportedFormats">支持 JPG/JPEG/PNG 格式</p>
+            </div>
+
+            <input type="file" id="singleFileInput" accept="image/jpeg,image/png">
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" id="singleProcessBtn" disabled data-i18n="clearWatermark">🚀 清除水印</button>
+                <button class="btn" id="singleDownloadBtn" disabled style="display: none;" data-i18n="downloadImage">⬇️ 下载图片</button>
+            </div>
+
+            <div class="result" id="singleResult"></div>
+            <div class="file-list" id="singlePreview" style="display: none;"></div>
+        </div>
+
+        <!-- 批量模式 -->
+        <div id="batchMode" style="display: none;">
+            <div class="upload-area" id="folderSelectArea">
+                <div class="icon">📁</div>
+                <h3 data-i18n="selectFolder">点击选择文件夹</h3>
+                <p style="color: #999; font-size: 0.9em; margin-top: 10px;" data-i18n="supportedFormats">支持 JPG/JPEG/PNG 格式</p>
+            </div>
+
+            <input type="file" id="folderInput" webkitdirectory directory multiple>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" id="batchProcessBtn" disabled data-i18n="batchProcess">🚀 批量处理</button>
+                <button class="btn btn-secondary" id="downloadAllBtn" disabled style="display: none;" data-i18n="downloadZip">📦 下载ZIP</button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+                <div class="progress-text" id="progressText" data-i18n="preparing">准备处理...</div>
+            </div>
+
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label" data-i18n="total">总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="successCount">0</div>
+                    <div class="stat-label" data-i18n="success">成功</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="errorCount">0</div>
+                    <div class="stat-label" data-i18n="failed">失败</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="savedSpace">0 B</div>
+                    <div class="stat-label" data-i18n="saved">节省</div>
+                </div>
+            </div>
+
+            <div class="file-list" id="fileList" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // ===== 语言配置 =====
+        let currentLang = 'zh';
+
+        const translations = {
+            zh: {
+                title: '净图助手',
+                singleMode: '📄 单张模式',
+                batchMode: '📁 批量模式',
+                dropImage: '拖放图片到这里',
+                selectFolder: '点击选择文件夹',
+                supportedFormats: '支持 JPG/JPEG/PNG 格式',
+                clearWatermark: '🚀 清除水印',
+                downloadImage: '⬇️ 下载图片',
+                batchProcess: '🚀 批量处理',
+                downloadZip: '📦 下载ZIP',
+                preparing: '准备处理...',
+                total: '总数',
+                success: '成功',
+                failed: '失败',
+                saved: '节省',
+                totalFiles: '共 {count} 个文件',
+                moreFiles: '... 还有 {count} 个文件',
+                statusPending: '待处理',
+                statusSuccess: '✓',
+                statusError: '✗',
+                errorFormat: '请选择 JPG/JPEG/PNG 格式的图片喵～',
+                errorNotFound: '未找到图片文件喵～ 请确保文件夹内有 JPG/PNG 文件',
+                errorProcessing: '处理中...',
+                errorFailed: '失败: ',
+                successSingle: '✅ 成功！节省: {size}',
+                successBatch: '✅ 成功: {success} | 失败: {failed} | 节省: {size}',
+                selectedFiles: '已选择 {count} 张图片',
+                processing: '处理中...',
+                completed: '完成！',
+                fileEllipsis: '... 还有 {count} 个文件'
+            },
+            en: {
+                title: 'PureImage',
+                singleMode: '📄 Single',
+                batchMode: '📁 Batch',
+                dropImage: 'Drop Image Here',
+                selectFolder: 'Click to Select Folder',
+                supportedFormats: 'Supports JPG/JPEG/PNG',
+                clearWatermark: '🚀 Clear',
+                downloadImage: '⬇️ Download',
+                batchProcess: '🚀 Batch Process',
+                downloadZip: '📦 Download ZIP',
+                preparing: 'Preparing...',
+                total: 'Total',
+                success: 'Success',
+                failed: 'Failed',
+                saved: 'Saved',
+                totalFiles: 'Total: {count} files',
+                moreFiles: '... {count} more files',
+                statusPending: 'Pending',
+                statusSuccess: '✓',
+                statusError: '✗',
+                errorFormat: 'Please select JPG/JPEG/PNG image',
+                errorNotFound: 'No images found. Please ensure folder contains JPG/PNG files',
+                errorProcessing: 'Processing...',
+                errorFailed: 'Failed: ',
+                successSingle: '✅ Success! Saved: {size}',
+                successBatch: '✅ Success: {success} | Failed: {failed} | Saved: {size}',
+                selectedFiles: 'Selected {count} images',
+                processing: 'Processing...',
+                completed: 'Completed!',
+                fileEllipsis: '... {count} more files'
+            }
+        };
+
+        // ===== 语言切换函数 =====
+        function switchLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+            // 更新语言按钮状态
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.lang === lang) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // 更新所有带 data-i18n 属性的元素
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+        }
+
+        // 获取翻译文本
+        function t(key, params = {}) {
+            let text = translations[currentLang][key] || key;
+
+            // 替换参数
+            Object.keys(params).forEach(param => {
+                text = text.replace(`{${param}}`, params[param]);
+            });
+
+            return text;
+        }
+
+        // ===== 全局状态 =====
+        let currentMode = 'single';
+        let singleFile = null;
+        let singleProcessedBlob = null;
+        let batchFiles = [];
+        let processedResults = [];
+
+        // ===== DOM元素 =====
+        const singleModeBtn = document.getElementById('singleModeBtn');
+        const batchModeBtn = document.getElementById('batchModeBtn');
+        const singleMode = document.getElementById('singleMode');
+        const batchMode = document.getElementById('batchMode');
+
+        // 单张模式元素
+        const singleDropZone = document.getElementById('singleDropZone');
+        const singleFileInput = document.getElementById('singleFileInput');
+        const singleProcessBtn = document.getElementById('singleProcessBtn');
+        const singleDownloadBtn = document.getElementById('singleDownloadBtn');
+        const singleResult = document.getElementById('singleResult');
+        const singlePreview = document.getElementById('singlePreview');
+
+        // 批量模式元素
+        const folderSelectArea = document.getElementById('folderSelectArea');
+        const folderInput = document.getElementById('folderInput');
+        const batchProcessBtn = document.getElementById('batchProcessBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const fileList = document.getElementById('fileList');
+        const stats = document.getElementById('stats');
+
+        // ===== 模式切换 =====
+        function switchMode(mode) {
+            currentMode = mode;
+            if (mode === 'single') {
+                singleMode.style.display = 'block';
+                batchMode.style.display = 'none';
+                singleModeBtn.classList.add('active');
+                batchModeBtn.classList.remove('active');
+            } else {
+                singleMode.style.display = 'none';
+                batchMode.style.display = 'block';
+                singleModeBtn.classList.remove('active');
+                batchModeBtn.classList.add('active');
+            }
+        }
+
+        singleModeBtn.addEventListener('click', () => switchMode('single'));
+        batchModeBtn.addEventListener('click', () => switchMode('batch'));
+
+        // ===== 文件类型判断 =====
+        function isImageFile(file) {
+            if (file.type && file.type.match('image/(jpeg|png)')) {
+                return true;
+            }
+            const name = file.name.toLowerCase();
+            return name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png');
+        }
+
+        // ===== 单张模式 =====
+        singleDropZone.addEventListener('click', () => singleFileInput.click());
+        singleDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            singleDropZone.classList.add('dragover');
+        });
+        singleDropZone.addEventListener('dragleave', () => singleDropZone.classList.remove('dragover'));
+        singleDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            singleDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleSingleFile(e.dataTransfer.files[0]);
+            }
+        });
+        singleFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleSingleFile(e.target.files[0]);
+            }
+        });
+
+        function handleSingleFile(file) {
+            if (!isImageFile(file)) {
+                showSingleResult(t('errorFormat'), 'error');
+                return;
+            }
+
+            singleFile = file;
+            singleProcessBtn.disabled = false;
+            singleDownloadBtn.style.display = 'none';
+
+            singlePreview.innerHTML = `
+                <div class="file-item">
+                    <div class="file-icon">🖼️</div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">${formatBytes(file.size)}</div>
+                    </div>
+                    <div class="file-status pending">${t('statusPending')}</div>
+                </div>
+            `;
+            singlePreview.style.display = 'block';
+            singleResult.className = 'result';
+        }
+
+        singleProcessBtn.addEventListener('click', async () => {
+            if (!singleFile) return;
+
+            singleProcessBtn.disabled = true;
+            showSingleResult(t('errorProcessing'), 'success');
+
+            try {
+                const arrayBuffer = await singleFile.arrayBuffer();
+                const cleaned = removeAIGCMarker(new Uint8Array(arrayBuffer));
+                singleProcessedBlob = new Blob([cleaned], { type: singleFile.type });
+
+                const saved = singleFile.size - singleProcessedBlob.size;
+                showSingleResult(t('successSingle', { size: formatBytes(saved) }), 'success');
+
+                singlePreview.innerHTML = `
+                    <div class="file-item">
+                        <div class="file-icon">🖼️</div>
+                        <div class="file-info">
+                            <div class="file-name">${singleFile.name}</div>
+                            <div class="file-meta">${formatBytes(singleFile.size)} → ${formatBytes(singleProcessedBlob.size)}</div>
+                        </div>
+                        <div class="file-status success">${t('statusSuccess')}</div>
+                    </div>
+                `;
+
+                singleDownloadBtn.style.display = 'inline-block';
+                singleDownloadBtn.disabled = false;
+
+            } catch (error) {
+                showSingleResult(t('errorFailed') + error.message, 'error');
+            } finally {
+                singleProcessBtn.disabled = false;
+            }
+        });
+
+        singleDownloadBtn.addEventListener('click', () => {
+            if (!singleProcessedBlob) return;
+            const newName = getCleanedFileName(singleFile.name);
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(singleProcessedBlob);
+            link.download = newName;
+            link.click();
+        });
+
+        // ===== 批量模式 =====
+        folderSelectArea.addEventListener('click', () => folderInput.click());
+
+        folderInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFolderFiles(Array.from(e.target.files));
+            }
+        });
+
+        function handleFolderFiles(files) {
+            const imageFiles = files.filter(f => isImageFile(f));
+
+            if (imageFiles.length === 0) {
+                showBatchResult(t('errorNotFound'), 'error');
+                return;
+            }
+
+            batchFiles = imageFiles;
+            processedResults = [];
+            batchProcessBtn.disabled = false;
+            downloadAllBtn.style.display = 'none';
+            stats.style.display = 'none';
+
+            renderFileList();
+            showBatchResult(t('selectedFiles', { count: imageFiles.length }), 'success');
+        }
+
+        function renderFileList() {
+            const MAX_DISPLAY = 15;
+            const displayFiles = batchFiles.slice(0, MAX_DISPLAY);
+            const hasMore = batchFiles.length > MAX_DISPLAY;
+
+            let html = `<div class="total-info">${t('totalFiles', { count: batchFiles.length })}</div>`;
+
+            html += displayFiles.map(file => `
+                <div class="file-item" id="file-${sanitizeId(file.name)}">
+                    <div class="file-icon">🖼️</div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">${formatBytes(file.size)}</div>
+                    </div>
+                    <div class="file-status pending">${t('statusPending')}</div>
+                </div>
+            `).join('');
+
+            if (hasMore) {
+                html += `<div class="file-ellipsis">${t('fileEllipsis', { count: batchFiles.length - MAX_DISPLAY })}</div>`;
+            }
+
+            fileList.innerHTML = html;
+            fileList.style.display = 'block';
+        }
+
+        batchProcessBtn.addEventListener('click', async () => {
+            if (batchFiles.length === 0) return;
+
+            batchProcessBtn.disabled = true;
+            progressContainer.classList.add('show');
+            stats.style.display = 'flex';
+
+            let successCount = 0;
+            let errorCount = 0;
+            let totalSaved = 0;
+
+            for (let i = 0; i < batchFiles.length; i++) {
+                const file = batchFiles[i];
+                const fileId = sanitizeId(file.name);
+
+                const progress = Math.round(((i) / batchFiles.length) * 100);
+                progressFill.style.width = `${progress}%`;
+                progressFill.textContent = `${progress}%`;
+                progressText.textContent = `${file.name} (${i + 1}/${batchFiles.length})`;
+
+                const fileItem = document.getElementById(`file-${fileId}`);
+                if (fileItem) {
+                    const statusEl = fileItem.querySelector('.file-status');
+                    if (statusEl) statusEl.className = 'file-status pending';
+                }
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const cleaned = removeAIGCMarker(new Uint8Array(arrayBuffer));
+                    const blob = new Blob([cleaned], { type: file.type });
+
+                    const saved = file.size - blob.size;
+                    totalSaved += saved;
+
+                    processedResults.push({
+                        originalFile: file,
+                        cleanedBlob: blob,
+                        saved: saved
+                    });
+
+                    successCount++;
+
+                    if (fileItem) {
+                        const statusEl = fileItem.querySelector('.file-status');
+                        if (statusEl) {
+                            statusEl.className = 'file-status success';
+                            statusEl.textContent = t('statusSuccess');
+                        }
+                        const metaEl = fileItem.querySelector('.file-meta');
+                        if (metaEl) {
+                            metaEl.textContent = `${formatBytes(file.size)} → ${formatBytes(blob.size)}`;
+                        }
+                    }
+
+                } catch (error) {
+                    errorCount++;
+                    if (fileItem) {
+                        const statusEl = fileItem.querySelector('.file-status');
+                        if (statusEl) {
+                            statusEl.className = 'file-status error';
+                            statusEl.textContent = t('statusError');
+                        }
+                    }
+                }
+
+                document.getElementById('totalCount').textContent = batchFiles.length;
+                document.getElementById('successCount').textContent = successCount;
+                document.getElementById('errorCount').textContent = errorCount;
+                document.getElementById('savedSpace').textContent = formatBytes(totalSaved);
+            }
+
+            progressFill.style.width = '100%';
+            progressFill.textContent = '100%';
+            progressText.textContent = t('completed');
+
+            showBatchResult(t('successBatch', {
+                success: successCount,
+                failed: errorCount,
+                size: formatBytes(totalSaved)
+            }), 'success');
+
+            batchProcessBtn.disabled = false;
+            downloadAllBtn.style.display = 'inline-block';
+            downloadAllBtn.disabled = false;
+        });
+
+        downloadAllBtn.addEventListener('click', async () => {
+            const zip = new JSZip();
+            const folder = zip.folder('cleaned_images');
+
+            processedResults.forEach(result => {
+                const newName = getCleanedFileName(result.originalFile.name);
+                folder.file(newName, result.cleanedBlob);
+            });
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = 'cleaned_images.zip';
+            link.click();
+        });
+
+        // ===== 核心算法 =====
+        function removeAIGCMarker(data) {
+            const result = new Uint8Array(data);
+            const aigcPattern = [0x41, 0x49, 0x47, 0x43, 0x22, 0x3A, 0x7B, 0x22];
+
+            for (let i = 0; i < result.length - aigcPattern.length - 100; i++) {
+                let match = true;
+
+                for (let j = 0; j < aigcPattern.length; j++) {
+                    if (result[i + j] !== aigcPattern[j]) {
+                        match = false;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    let end = i + aigcPattern.length;
+                    let braceCount = 1;
+
+                    while (end < result.length && braceCount > 0) {
+                        if (result[end] === 0x7B) braceCount++;
+                        if (result[end] === 0x7D) braceCount--;
+                        end++;
+                    }
+
+                    for (let k = i; k < end; k++) {
+                        result[k] = 0x00;
+                    }
+
+                    i = end - 1;
+                }
+            }
+
+            return result;
+        }
+
+        // ===== 工具函数 =====
+        function getCleanedFileName(originalName) {
+            const lastDotIndex = originalName.lastIndexOf('.');
+            if (lastDotIndex === -1) {
+                return `${originalName}_cleaned`;
+            }
+            const name = originalName.substring(0, lastDotIndex);
+            const ext = originalName.substring(lastDotIndex);
+            return `${name}_cleaned${ext}`;
+        }
+
+        function sanitizeId(name) {
+            return name.replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function showSingleResult(message, type) {
+            singleResult.innerHTML = message;
+            singleResult.className = `result show ${type}`;
+        }
+
+        function showBatchResult(message, type) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result show ${type}`;
+            resultDiv.innerHTML = message;
+            batchMode.insertBefore(resultDiv, progressContainer);
+            setTimeout(() => resultDiv.remove(), 3000);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

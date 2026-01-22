@@ -1,241 +1,222 @@
 "use client";
 import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
-import InteractiveEffects from "./components/InteractiveEffects";
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  const [activeSection, setActiveSection] = useState("home");
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisibleSections((prev) => new Set(prev).add(entry.target.id));
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    document.querySelectorAll("section[id]").forEach((section) => {
+      observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
-    setActiveSection(sectionId);
+    setMenuOpen(false);
     document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div className="scroll-smooth min-h-screen relative">
-      <InteractiveEffects />
-      {/* Hero Section - 作为主页主体 */}
-      <section className="min-h-screen flex items-center justify-center px-4 py-12">
-        <div className="max-w-5xl mx-auto w-full text-center animate-fade-in">
-          {/* 头像部分 */}
-          <div className="avatar-container mb-8 animate-float">
-            <Image
-              src="/avatar.png"
-              alt="小D头像"
-              width={200}
-              height={200}
-              className="w-32 h-32 md:w-40 md:h-40 rounded-full mx-auto mb-6 border-4 border-white shadow-2xl ring-4 ring-white/50 hover:scale-105 transition-transform duration-300"
-              priority
-            />
-            <div className="avatar-badge animate-pulse-slow">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-              </svg>
+    <div className="min-h-screen bg-white text-black overflow-x-hidden">
+      {/* 导航栏 - 极简固定 */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-black">
+        <div className="w-full mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="text-2xl font-black tracking-tighter">小D.</div>
+
+          {/* 桌面导航 */}
+          <div className="hidden md:flex gap-8">
+            <button onClick={() => scrollToSection("about")} className="text-sm font-bold hover:line-through transition-all">我是谁</button>
+            <button onClick={() => scrollToSection("works")} className="text-sm font-bold hover:line-through transition-all">作品</button>
+            <button onClick={() => scrollToSection("contact")} className="text-sm font-bold hover:line-through transition-all">联系</button>
+          </div>
+
+          {/* 移动端菜单按钮 */}
+          <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden">
+            <div className="w-6 h-5 flex flex-col justify-between">
+              <span className={`w-full h-0.5 bg-black transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+              <span className={`w-full h-0.5 bg-black transition-all ${menuOpen ? 'opacity-0' : ''}`}></span>
+              <span className={`w-full h-0.5 bg-black transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
             </div>
-          </div>
-
-          {/* 标题和描述 */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-slate-700 to-blue-500 bg-clip-text text-transparent">
-              小D
-            </span>
-          </h1>
-
-          <p className="text-xl md:text-2xl mb-6 text-slate-600 dark:text-slate-300">
-            10年+技术开发经验 · AI科普博主 · 用AI提效工作
-          </p>
-
-          <div className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full font-medium shadow-lg mb-8">
-            AI技术专家 & 效率提升顾问
-          </div>
-
-          {/* 行动按钮 */}
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => scrollToSection("about")}
-              className="btn-primary magnetic-btn focus-ring"
-            >
-              了解更多
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="btn-secondary magnetic-btn focus-ring"
-            >
-              联系我
-            </button>
-          </div>
+          </button>
         </div>
-      </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20 px-4 flex items-center justify-center">
-        <div className="max-w-5xl mx-auto w-full">
-          {/* 标题部分 */}
-          <div className="text-center mb-16 animate-on-scroll">
-            <div className="flex items-center justify-center mb-6">
-              <div className="icon-gradient">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+        {/* 移动端菜单 */}
+        {menuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-black">
+            <div className="flex flex-col p-6 gap-4">
+              <button onClick={() => scrollToSection("about")} className="text-left text-lg font-black hover:pl-4 transition-all">我是谁</button>
+              <button onClick={() => scrollToSection("works")} className="text-left text-lg font-black hover:pl-4 transition-all">作品</button>
+              <button onClick={() => scrollToSection("contact")} className="text-left text-lg font-black hover:pl-4 transition-all">联系</button>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section - 不对称杂志风格 */}
+      <section className="min-h-screen relative pt-20">
+        <div className="w-full mx-auto px-6 min-h-screen flex">
+          {/* 左侧 - 超大标题 */}
+          <div className="w-full lg:w-3/5 flex flex-col justify-center">
+            <div className="space-y-8">
+              <div className="overflow-hidden">
+                <h1 className="text-[12vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter animate-slide-up">
+                  AI
+                </h1>
               </div>
-              <h2 className="section-title ml-4">我是谁</h2>
+              <div className="overflow-hidden">
+                <h1 className="text-[12vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                  技术<span className="text-red-600">专家</span>
+                </h1>
+              </div>
+              <div className="overflow-hidden">
+                <h1 className="text-[12vw] lg:text-[8vw] font-black leading-[0.85] tracking-tighter animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                  效率<span className="line-through decoration-red-600 decoration-8">顾问</span>
+                </h1>
+              </div>
+
+              <div className="pt-12 animate-slide-up" style={{ animationDelay: "0.4s" }}>
+                <p className="text-xl md:text-2xl font-medium max-w-xl leading-relaxed">
+                  10年+开发经验 · 帮助职场人士成为<span className="bg-black text-white px-2">超级个体</span>
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-4 pt-8 animate-slide-up" style={{ animationDelay: "0.5s" }}>
+                <button
+                  onClick={() => scrollToSection("about")}
+                  className="px-8 py-4 bg-black text-white font-bold text-lg hover:bg-red-600 hover:scale-105 transition-all duration-300"
+                >
+                  了解我 →
+                </button>
+                <button
+                  onClick={() => scrollToSection("works")}
+                  className="px-8 py-4 border-2 border-black font-bold text-lg hover:bg-black hover:text-white transition-all duration-300"
+                >
+                  查看工具
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* 内容卡片 */}
-          <div className="modern-card p-8 mb-12 animate-on-scroll">
-            <div className="flex items-center mb-6">
-              <div className="bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg p-3 mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">愿景使命</h3>
-            </div>
-            <p className="text-lg text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
-              帮助<span className="font-bold text-blue-600 dark:text-blue-400">更多人</span>掌握AI技术，
-              赋能<span className="font-bold text-indigo-600 dark:text-indigo-400">职场人士</span>成为新时代的超级个体！
-            </p>
-            <p className="text-base text-slate-600 dark:text-slate-400 italic">
-              用自己宝贵的技术经验分享实用的AI知识，让更多人受益于人工智能技术。
-            </p>
-          </div>
+          {/* 右侧 - 头像 + 装饰 */}
+          <div className="hidden lg:flex lg:w-2/5 items-center justify-center relative">
+            {/* 装饰圆圈 */}
+            <div className="absolute w-[80%] h-[80%] border-[3px] border-black rounded-full animate-spin-slow"></div>
+            <div className="absolute w-[60%] h-[60%] border-2 border-red-600 rounded-full"></div>
 
-          {/* 个人介绍卡片 */}
-          <div className="modern-card p-8 animate-on-scroll">
-            <div className="flex items-center mb-6">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-3 mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">个人履历</h3>
+            {/* 头像 */}
+            <div className="relative z-10 w-72 h-72">
+              <div className="absolute inset-0 bg-black rounded-full"></div>
+              <Image
+                src="/avatar.png"
+                alt="小D"
+                fill
+                className="relative z-10 object-cover rounded-full border-8 border-white"
+                priority
+              />
             </div>
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                <span className="text-slate-700 dark:text-slate-300">10年+软件开发经验，精通多种编程语言和技术栈</span>
-              </div>
-              <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                <span className="text-slate-700 dark:text-slate-300">AI科普博主，专注AI技术研究与推广</span>
-              </div>
-              <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                <span className="text-slate-700 dark:text-slate-300">致力于通过AI技术帮助人们提高工作效率</span>
-              </div>
-              <div className="flex items-start">
-                <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mt-2 mr-3 flex-shrink-0"></span>
-                <span className="text-slate-700 dark:text-slate-300">【小D聊AI】公众号创始人，分享实用AI工具和知识</span>
-              </div>
+
+            {/* 装饰文字 */}
+            <div className="absolute -bottom-8 right-0 text-6xl font-black text-red-600 rotate-12">
+              10Y+
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Skills Section */}
-      <section id="skills" className="py-20 px-4 flex items-center justify-center">
-        <div className="max-w-5xl mx-auto w-full">
-          {/* 标题部分 */}
-          <div className="text-center mb-16 animate-on-scroll">
-            <div className="flex items-center justify-center mb-6">
-              <div className="icon-gradient">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <h2 className="section-title ml-4">我的技能</h2>
-            </div>
-          </div>
-
-          {/* 技能卡片 */}
-          <div className="modern-card p-8 animate-on-scroll">
-            <div className="flex items-center mb-6">
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg p-3 mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">擅长方向</h3>
-            </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-blue-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">编程语言</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">C++, C, Java, Python, JavaScript</p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-purple-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">数据库</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">MySQL, MS SQL Server</p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-green-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">系统平台</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">Linux, Windows, Android</p>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-yellow-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">AI技术</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">PyTorch, 深度学习, 大模型应用</p>
-              </div>
-              <div className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-red-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">软件开发</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">全栈开发, 系统架构, 性能优化</p>
-              </div>
-              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-5 border border-cyan-200 dark:border-slate-600">
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-2">AI应用开发</h4>
-                <p className="text-slate-600 dark:text-slate-300 text-sm">智能工具开发, 自动化系统</p>
-              </div>
-            </div>
-          </div>
+        {/* 底部装饰斜线 */}
+        <div className="absolute bottom-0 left-0 right-0 h-2 bg-black">
+          <div className="h-full w-1/3 bg-red-600"></div>
         </div>
       </section>
 
-      {/* Works Section */}
-      <section id="works" className="py-20 px-4 flex items-center justify-center">
-        <div className="max-w-5xl mx-auto w-full">
-          {/* 标题部分 */}
-          <div className="text-center mb-16 animate-on-scroll">
-            <div className="flex items-center justify-center mb-6">
-              <div className="icon-gradient">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2 className="section-title ml-4">我的作品</h2>
+      {/* About Section - 我是谁 */}
+      <section id="about" className="py-32 px-6 bg-black text-white">
+        <div className="w-full mx-auto px-6">
+          <div className={`${visibleSections.has("about") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"} transition-all duration-1000`}>
+            {/* 不对称标题 */}
+            <div className="mb-20">
+              <span className="text-red-600 font-black text-sm tracking-widest">// ABOUT</span>
+              <h2 className="text-[15vw] lg:text-[10vw] font-black leading-none mt-4">
+                我是<span className="text-red-600">谁</span>
+              </h2>
             </div>
-          </div>
 
-          {/* 作品卡片 */}
-          <div className="modern-card p-8 animate-on-scroll">
-            <div className="flex items-center mb-6">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg p-3 mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">产品及服务</h3>
-            </div>
-            <div className="space-y-6">
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="font-bold text-slate-900 dark:text-white mb-2">AI工具开发</h4>
-                <p className="text-slate-700 dark:text-slate-300 mb-2">批量定制化重命名文件系统</p>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">强大的文件批量重命名工具，支持多种命名模式和自定义规则</p>
-                <div className="mt-2">
-                  <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">开发中</span>
+            {/* 网格布局 - 不对称 */}
+            <div className="grid lg:grid-cols-12 gap-8">
+              {/* 左侧大卡片 */}
+              <div className="lg:col-span-7 space-y-8">
+                <div className="bg-white text-black p-8 md:p-12">
+                  <div className="flex items-start gap-4 mb-8">
+                    <div className="w-16 h-16 bg-black text-white flex items-center justify-center text-3xl font-black flex-shrink-0">
+                      01
+                    </div>
+                    <div>
+                      <h3 className="text-4xl md:text-5xl font-black mb-4">愿景</h3>
+                      <div className="w-20 h-2 bg-red-600"></div>
+                    </div>
+                  </div>
+                  <p className="text-2xl md:text-3xl font-medium leading-relaxed">
+                    帮助<span className="line-through decoration-red-600 decoration-4">更多人</span>掌握AI技术
+                  </p>
+                  <p className="text-xl text-gray-600 mt-6">
+                    赋能职场人士成为新时代的超级个体
+                  </p>
+                </div>
+
+                <div className="bg-red-600 text-white p-8 md:p-12">
+                  <div className="flex items-start gap-4 mb-8">
+                    <div className="w-16 h-16 bg-white text-red-600 flex items-center justify-center text-3xl font-black flex-shrink-0">
+                      02
+                    </div>
+                    <div>
+                      <h3 className="text-4xl md:text-5xl font-black mb-4">履历</h3>
+                      <div className="w-20 h-2 bg-white"></div>
+                    </div>
+                  </div>
+                  <ul className="space-y-4 text-xl">
+                    <li className="flex items-start gap-3">
+                      <span className="text-3xl font-black">→</span>
+                      10年+软件开发经验
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-3xl font-black">→</span>
+                      AI科普博主
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-3xl font-black">→</span>
+                      【小D聊AI】创始人
+                    </li>
+                  </ul>
                 </div>
               </div>
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="font-bold text-slate-900 dark:text-white mb-2">效率工具</h4>
-                <p className="text-slate-700 dark:text-slate-300 mb-2">本地文件查看器</p>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">轻量级本地文件查看器，支持多种文件格式的快速预览</p>
-                <div className="mt-2">
-                  <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">开发中</span>
+
+              {/* 右侧装饰 */}
+              <div className="lg:col-span-5 flex flex-col justify-between">
+                <div className="bg-gray-900 p-8">
+                  <p className="text-8xl font-black text-red-600 leading-none">
+                    {new Date().getFullYear() - 2015}
+                  </p>
+                  <p className="text-gray-400 mt-4">年经验</p>
                 </div>
-              </div>
-              <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="font-bold text-slate-900 dark:text-white mb-2">AI科普内容</h4>
-                <p className="text-slate-700 dark:text-slate-300 mb-2">【小D聊AI】公众号</p>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">分享实用AI工具、技术教程和行业洞察，帮助读者掌握AI技术</p>
-                <div className="mt-2">
-                  <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">持续更新</span>
+
+                <div className="mt-8 p-8 border-4 border-red-600">
+                  <p className="text-6xl font-black leading-none">
+                    AI
+                  </p>
+                  <p className="text-2xl font-bold mt-4">技术专家</p>
                 </div>
               </div>
             </div>
@@ -243,96 +224,163 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-20 px-4 flex items-center justify-center">
-        <div className="max-w-5xl mx-auto w-full">
-          {/* 标题部分 */}
-          <div className="text-center mb-16 animate-on-scroll">
-            <div className="flex items-center justify-center mb-6">
-              <div className="icon-gradient">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
+      {/* Works Section - 我的作品 */}
+      <section id="works" className="py-32 px-6">
+        <div className="w-full mx-auto px-6">
+          <div className={`${visibleSections.has("works") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"} transition-all duration-1000`}>
+            {/* 标题 */}
+            <div className="mb-20">
+              <span className="text-red-600 font-black text-sm tracking-widest">// WORKS</span>
+              <h2 className="text-[15vw] lg:text-[10vw] font-black leading-none mt-4">
+                我的<span className="text-red-600">作品</span>
+              </h2>
+            </div>
+
+            {/* 工具卡片 - 不对称网格 */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* PureImage - 大卡片 */}
+              <a
+                href="/pure-image"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-black text-white p-8 md:p-12 hover:bg-red-600 transition-colors duration-300"
+              >
+                <div className="flex justify-between items-start mb-8">
+                  <span className="text-[12vw] lg:text-6xl font-black leading-none">01</span>
+                  <span className="px-4 py-2 bg-white text-black text-sm font-bold">可用</span>
+                </div>
+
+                <h3 className="text-4xl md:text-5xl font-black mb-6">净图助手</h3>
+
+                <p className="text-xl text-gray-400 mb-8">
+                  批量清除 AI 生成图片的元数据标记，保护隐私，节省空间
+                </p>
+
+                <div className="flex items-center gap-4 text-sm mb-8">
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 bg-white rounded-full"></span>
+                    免费
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 bg-white rounded-full"></span>
+                    本地处理
+                  </span>
+                </div>
+
+                <div className="flex items-center text-2xl font-black group-hover:translate-x-4 transition-transform duration-300">
+                  立即使用 →
+                </div>
+              </a>
+
+              {/* 公众号 */}
+              <div className="bg-gray-100 p-8 md:p-12">
+                <div className="flex justify-between items-start mb-8">
+                  <span className="text-[12vw] lg:text-6xl font-black text-gray-300 leading-none">02</span>
+                  <span className="px-4 py-2 bg-black text-white text-sm font-bold">持续</span>
+                </div>
+
+                <h3 className="text-4xl md:text-5xl font-black mb-6">小D聊AI</h3>
+
+                <p className="text-xl text-gray-600 mb-8">
+                  分享实用AI工具、技术教程，帮助读者掌握AI技术
+                </p>
+
+                <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               </div>
-              <h2 className="section-title ml-4">联系方式</h2>
+
+              {/* 开发中工具 1 */}
+              <div className="bg-white border-4 border-black p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-6xl font-black text-gray-300">03</span>
+                  <span className="px-4 py-2 bg-gray-200 text-gray-600 text-sm font-bold">开发中</span>
+                </div>
+                <h3 className="text-2xl font-black mb-3">批量重命名</h3>
+                <p className="text-gray-600">强大的文件批量重命名工具</p>
+              </div>
+
+              {/* 开发中工具 2 */}
+              <div className="bg-white border-4 border-black p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-6xl font-black text-gray-300">04</span>
+                  <span className="px-4 py-2 bg-gray-200 text-gray-600 text-sm font-bold">开发中</span>
+                </div>
+                <h3 className="text-2xl font-black mb-3">文件查看器</h3>
+                <p className="text-gray-600">轻量级本地文件查看器</p>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* 联系信息卡片 */}
-          <div className="modern-card p-8 animate-on-scroll">
-            <div className="flex items-center mb-6">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-3 mr-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-slate-900 dark:text-white">联系信息</h3>
+      {/* Contact Section - 联系方式 */}
+      <section id="contact" className="py-32 px-6 bg-black text-white">
+        <div className="w-full mx-auto px-6">
+          <div className={`${visibleSections.has("contact") ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"} transition-all duration-1000`}>
+            {/* 标题 */}
+            <div className="mb-20">
+              <span className="text-red-600 font-black text-sm tracking-widest">// CONTACT</span>
+              <h2 className="text-[15vw] lg:text-[10vw] font-black leading-none mt-4">
+                联系<span className="text-red-600">我</span>
+              </h2>
             </div>
 
+            {/* 联系卡片 */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" clipRule="evenodd" />
-                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                  </svg>
+              <div className="bg-white text-black p-8 hover:-translate-y-2 transition-transform duration-300">
+                <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-black mb-6">
+                  微
                 </div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">公众号</h4>
-                <p className="text-slate-600 dark:text-slate-300">小D聊AI</p>
+                <h3 className="text-xl font-black mb-2">微信公众号</h3>
+                <p className="text-gray-600">小D聊AI</p>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                  </svg>
+              <div className="bg-white text-black p-8 hover:-translate-y-2 transition-transform duration-300">
+                <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-black mb-6">
+                  信
                 </div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">微信</h4>
-                <p className="text-slate-600 dark:text-slate-300">gptdavid</p>
+                <h3 className="text-xl font-black mb-2">微信</h3>
+                <p className="text-gray-600">gptdavid</p>
               </div>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
+              <a
+                href="https://github.com/jiawei89"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white text-black p-8 hover:-translate-y-2 transition-transform duration-300 group"
+              >
+                <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-black mb-6 group-hover:bg-red-600 transition-colors">
+                  Git
                 </div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Github</h4>
-                <a
-                  href="https://github.com/jiawei89"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                >
-                  @jiawei89
-                </a>
-              </div>
+                <h3 className="text-xl font-black mb-2">GitHub</h3>
+                <p className="text-gray-600">@jiawei89</p>
+              </a>
 
-              <div className="flex flex-col items-center text-center">
-                <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
+              <a
+                href="https://t.zsxq.com/15J7IApld"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-white text-black p-8 hover:-translate-y-2 transition-transform duration-300 group"
+              >
+                <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center text-2xl font-black mb-6 group-hover:bg-red-600 transition-colors">
+                  星
                 </div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">知识星球</h4>
-                <a
-                  href="https://t.zsxq.com/15J7IApld"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-purple-600 dark:text-purple-400 hover:underline cursor-pointer"
-                >
-                  加入星球
-                </a>
-              </div>
+                <h3 className="text-xl font-black mb-2">知识星球</h3>
+                <p className="text-gray-600">加入星球</p>
+              </a>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="text-center text-slate-600 dark:text-slate-400 py-8 border-t border-slate-200 dark:border-slate-700">
-        <div className="max-w-5xl mx-auto w-full px-4">
-          <p className="text-sm">&copy; 2025 小D的个人主页 · AI技术专家 & 效率提升顾问</p>
+      <footer className="py-12 px-6 bg-white border-t-4 border-black">
+        <div className="w-full mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p className="text-2xl font-black">© 2025 小D</p>
+          <p className="text-gray-600">用AI技术赋能更多人成为超级个体</p>
         </div>
       </footer>
     </div>

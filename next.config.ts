@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    return [
+      {
+        source: '/pure-image',
+        destination: '/tools/pure-image.html',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
