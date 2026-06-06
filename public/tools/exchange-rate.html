@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>汇率转换器 - 小D工具</title>
+  <meta name="description" content="实时汇率转换工具，支持人民币、美元、欧元、日元、港币、泰铢，含手续费计算">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: #fff;
+      color: #000;
+    }
+    .swap-btn { transition: transform 0.3s ease; }
+    .swap-btn:hover { transform: rotate(180deg); }
+    .result-flash { animation: flash 0.4s ease; }
+    @keyframes flash {
+      0% { background: #fef2f2; }
+      100% { background: #000; }
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    .spinner {
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      width: 14px; height: 14px;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- 导航 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-black">
+    <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="text-2xl font-black tracking-tighter hover:text-red-600 transition-colors">← 小D.</a>
+      <span class="text-sm font-bold tracking-widest">汇率转换器</span>
+    </div>
+  </nav>
+
+  <!-- 主体 -->
+  <main class="min-h-screen pt-24 pb-16 px-6 flex items-start justify-center">
+    <div class="w-full max-w-2xl">
+
+      <!-- 标题区 -->
+      <div class="mb-8">
+        <span class="text-red-600 font-black text-sm tracking-widest">// TOOL</span>
+        <h1 class="text-5xl md:text-6xl font-black leading-none mt-2">
+          汇率<span class="text-red-600">转换</span>
+        </h1>
+        <p class="text-gray-500 mt-3 text-lg">实时汇率 · 手续费计算 · 支持6种主流货币</p>
+      </div>
+
+      <!-- 转换卡片 -->
+      <div class="bg-black text-white p-6 md:p-10 mb-4">
+
+        <!-- 支付（源币种） -->
+        <div class="mb-4">
+          <label class="text-xs font-bold tracking-widest text-gray-400 mb-2 block">支付</label>
+          <div class="flex gap-3">
+            <select id="fromCurrency"
+              class="bg-white text-black px-4 py-4 font-black text-lg cursor-pointer outline-none min-w-[120px]">
+            </select>
+            <input id="fromAmount" type="number" value="100" min="0" step="0.01"
+              class="flex-1 bg-white text-black px-4 py-4 font-black text-2xl outline-none text-right" />
+          </div>
+        </div>
+
+        <!-- 交换按钮 -->
+        <div class="flex justify-center my-2">
+          <button id="swapBtn" class="swap-btn w-12 h-12 border-2 border-white flex items-center justify-center hover:bg-red-600 hover:border-red-600 transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 收到（目标币种） -->
+        <div class="mb-6">
+          <label class="text-xs font-bold tracking-widest text-gray-400 mb-2 block">收到</label>
+          <div class="flex gap-3">
+            <select id="toCurrency"
+              class="bg-white text-black px-4 py-4 font-black text-lg cursor-pointer outline-none min-w-[120px]">
+            </select>
+            <input id="toAmount" type="number" readonly
+              class="flex-1 bg-gray-200 text-black px-4 py-4 font-black text-2xl outline-none text-right cursor-not-allowed" />
+          </div>
+        </div>
+
+        <!-- 汇率信息 -->
+        <div id="rateInfo" class="text-center text-gray-400 text-sm py-2">
+          <span class="spinner"></span> 获取汇率中...
+        </div>
+      </div>
+
+      <!-- 手续费设置 -->
+      <div class="bg-gray-100 p-6 md:p-8 mb-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-black">手续费设置</h3>
+          <button id="resetFee" class="text-xs font-bold text-gray-500 hover:text-red-600 transition-colors">重置为0</button>
+        </div>
+        <div class="flex items-center gap-4">
+          <input id="feePercent" type="number" value="0" min="0" max="100" step="0.1"
+            class="w-24 bg-white border-2 border-black px-4 py-3 font-black text-xl outline-none text-center" />
+          <span class="text-2xl font-black">%</span>
+          <div class="flex-1 text-right">
+            <div class="text-xs text-gray-500">扣除手续费</div>
+            <div id="feeAmount" class="text-lg font-black text-red-600">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详细明细 -->
+      <div class="bg-white border-4 border-black p-6 md:p-8 mb-4">
+        <h3 class="text-xl font-black mb-4">转换明细</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between items-baseline pb-2 border-b border-gray-200">
+            <span class="text-gray-500 text-sm">输入金额</span>
+            <span id="detailInput" class="font-black text-lg">—</span>
+          </div>
+          <div class="flex justify-between items-baseline pb-2 border-b border-gray-200">
+            <span class="text-gray-500 text-sm">实时汇率</span>
+            <span id="detailRate" class="font-black text-lg">—</span>
+          </div>
+          <div class="flex justify-between items-baseline pb-2 border-b border-gray-200">
+            <span class="text-gray-500 text-sm">手续费 (<span id="detailFeePercent">0</span>%)</span>
+            <span id="detailFee" class="font-black text-lg text-red-600">—</span>
+          </div>
+          <div class="flex justify-between items-baseline pt-2">
+            <span class="font-black text-lg">实际到账</span>
+            <span id="detailResult" class="font-black text-2xl">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 刷新按钮 -->
+      <div class="text-center">
+        <button id="refreshBtn"
+          class="px-8 py-3 border-2 border-black font-bold hover:bg-black hover:text-white transition-all">
+          🔄 刷新汇率
+        </button>
+        <p id="lastUpdate" class="text-xs text-gray-400 mt-3"></p>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // ========== 币种数据 ==========
+    const CURRENCIES = [
+      { code: 'CNY', name: '人民币', flag: '🇨🇳' },
+      { code: 'USD', name: '美元',   flag: '🇺🇸' },
+      { code: 'EUR', name: '欧元',   flag: '🇪🇺' },
+      { code: 'JPY', name: '日元',   flag: '🇯🇵' },
+      { code: 'HKD', name: '港币',   flag: '🇭🇰' },
+      { code: 'THB', name: '泰铢',   flag: '🇹🇭' },
+    ];
+
+    const CURRENCY_MAP = Object.fromEntries(CURRENCIES.map(c => [c.code, c]));
+
+    // ========== DOM ==========
+    const $ = id => document.getElementById(id);
+    const fromSel = $('fromCurrency');
+    const toSel   = $('toCurrency');
+    const fromInp = $('fromAmount');
+    const toInp   = $('toAmount');
+    const feeInp  = $('feePercent');
+    const rateInfo = $('rateInfo');
+    const refreshBtn = $('refreshBtn');
+
+    // ========== 初始化下拉 ==========
+    function initSelects() {
+      CURRENCIES.forEach(c => {
+        fromSel.add(new Option(`${c.flag} ${c.code}`, c.code));
+        toSel.add(new Option(`${c.flag} ${c.code}`,   c.code));
+      });
+      fromSel.value = 'CNY';
+      toSel.value   = 'USD';
+    }
+
+    // ========== 汇率缓存 ==========
+    let rates = {};          // { USD: 1, CNY: 7.2, ... }  基准 USD
+    let lastFetch = null;
+
+    async function fetchRates() {
+      rateInfo.innerHTML = '<span class="spinner"></span> 获取汇率中...';
+      refreshBtn.disabled = true;
+      try {
+        // open.er-api.com — 免费、无 key、CORS 友好，数据来自权威机构
+        const resp = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (!resp.ok) throw new Error('API error');
+        const data = await resp.json();
+        if (data.result !== 'success') throw new Error('API returned failure');
+
+        rates = data.rates;
+        lastFetch = new Date();
+        updateRateInfo();
+        calculate();
+      } catch (err) {
+        // 备用 API
+        try {
+          const resp2 = await fetch('https://api.frankfurter.app/latest?from=USD');
+          const data2 = await resp2.json();
+          rates = data2.rates;
+          rates.USD = 1;
+          lastFetch = new Date();
+          updateRateInfo();
+          calculate();
+        } catch (err2) {
+          rateInfo.innerHTML = '<span class="text-red-500">⚠ 汇率获取失败，请刷新重试</span>';
+        }
+      }
+      refreshBtn.disabled = false;
+    }
+
+    function updateRateInfo() {
+      if (!lastFetch) return;
+      const from = fromSel.value;
+      const to   = toSel.value;
+      const r    = getRate(from, to);
+      rateInfo.innerHTML = `
+        <span class="text-white font-bold">1 ${from}</span>
+        = <span class="text-red-400 font-bold">${formatRate(r)}</span>
+        <span class="text-white font-bold">${to}</span>
+        <span class="block mt-1 text-xs">更新于 ${lastFetch.toLocaleTimeString('zh-CN')} · 仅供参考</span>
+      `;
+    }
+
+    // ========== 核心计算 ==========
+    // 返回 1 unit fromCurrency → toCurrency
+    function getRate(from, to) {
+      if (from === to) return 1;
+      // rates 以 USD 为基准: rates.USD = 1, rates.CNY = 7.2
+      // 1 from → USD: 1 / rates[from]
+      // USD → to: rates[to]
+      return rates[to] / rates[from];
+    }
+
+    function calculate() {
+      if (!rates || Object.keys(rates).length === 0) return;
+
+      const amount = parseFloat(fromInp.value) || 0;
+      const fee    = parseFloat(feeInp.value)  || 0;
+      const from   = fromSel.value;
+      const to     = toSel.value;
+
+      const rate    = getRate(from, to);
+      const gross   = amount * rate;             // 转换后总额
+      const feeAmt  = gross * (fee / 100);       // 手续费金额（以目标币种计）
+      const net     = gross - feeAmt;            // 实际到账
+
+      // 填充结果（number input 不支持逗号，用原始数字）
+      toInp.value = net.toFixed((to === 'JPY' || to === 'THB') ? 0 : 2);
+
+      // 明细
+      const fromC = CURRENCY_MAP[from];
+      const toC   = CURRENCY_MAP[to];
+      $('detailInput').textContent    = `${formatNum(amount, from)} ${from}`;
+      $('detailRate').textContent     = `1 ${from} = ${formatRate(rate)} ${to}`;
+      $('detailFeePercent').textContent = fee.toFixed(1);
+      $('detailFee').textContent      = `${formatNum(feeAmt, to)} ${to}`;
+      $('detailResult').textContent   = `${formatNum(net, to)} ${to}`;
+      $('feeAmount').textContent      = `${formatNum(feeAmt, to)} ${to}`;
+
+      updateRateInfo();
+    }
+
+    // ========== 格式化 ==========
+    function formatNum(n, code) {
+      // 日元/泰铢不留小数，其他保留2位
+      const decimals = (code === 'JPY' || code === 'THB') ? 0 : 2;
+      return n.toLocaleString('en-US', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      });
+    }
+
+    function formatRate(n) {
+      if (n >= 100)  return n.toFixed(2);
+      if (n >= 1)    return n.toFixed(4);
+      return n.toFixed(6);
+    }
+
+    // ========== 交换币种 ==========
+    $('swapBtn').addEventListener('click', () => {
+      const tmp = fromSel.value;
+      fromSel.value = toSel.value;
+      toSel.value = tmp;
+      calculate();
+    });
+
+    // ========== 事件 ==========
+    [fromSel, toSel, fromInp, feeInp].forEach(el => {
+      el.addEventListener('input', calculate);
+      el.addEventListener('change', calculate);
+    });
+
+    $('resetFee').addEventListener('click', () => {
+      feeInp.value = 0;
+      calculate();
+    });
+
+    refreshBtn.addEventListener('click', fetchRates);
+
+    // ========== 启动 ==========
+    initSelects();
+    fetchRates();
+  </script>
+
+</body>
+</html>

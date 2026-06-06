@@ -292,15 +292,25 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 开发中工具 1 */}
-              <div className="bg-white border-4 border-black p-8">
+              {/* 汇率转换器 */}
+              <a
+                href="/tool/exchange-rate"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group bg-white border-4 border-black p-8 hover:bg-black hover:text-white transition-colors duration-300"
+              >
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="text-6xl font-black text-gray-300">03</span>
-                  <span className="px-4 py-2 bg-gray-200 text-gray-600 text-sm font-bold">开发中</span>
+                  <span className="text-6xl font-black text-gray-300 group-hover:text-red-600 transition-colors">03</span>
+                  <span className="px-4 py-2 bg-black text-white text-sm font-bold group-hover:bg-red-600 transition-colors">可用</span>
                 </div>
-                <h3 className="text-2xl font-black mb-3">批量重命名</h3>
-                <p className="text-gray-600">强大的文件批量重命名工具</p>
-              </div>
+                <h3 className="text-2xl font-black mb-3">汇率转换器</h3>
+                <p className="text-gray-600 group-hover:text-gray-300 transition-colors mb-4">
+                  实时汇率转换，支持人民币、美元、欧元、日元、港币、泰铢
+                </p>
+                <div className="flex items-center text-sm font-bold group-hover:translate-x-2 transition-transform duration-300">
+                  立即使用 →
+                </div>
+              </a>
 
               {/* 开发中工具 2 */}
               <div className="bg-white border-4 border-black p-8">
