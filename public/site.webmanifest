@@ -1,0 +1,21 @@
+{
+  "name": "小D工具箱",
+  "short_name": "小D",
+  "description": "实用AI工具，赋能职场人士成为超级个体",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#000000",
+  "background_color": "#000000",
+  "start_url": "/",
+  "display": "standalone"
+}

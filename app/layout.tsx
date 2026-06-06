@@ -15,6 +15,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "小D - AI技术专家 & 效率提升顾问",
   description: "10年+技术开发经验的AI技术专家，致力于用AI技术赋能职场人士。提供实用AI工具开发、技术科普和效率提升方案。",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
