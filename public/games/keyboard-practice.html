@@ -70,7 +70,11 @@
       border: 2px solid #333;
       border-radius: 10px;
     }
-    .kb-row { display: flex; justify-content: center; gap: 5px; }
+    .kb-row { display: flex; gap: 5px; }
+    /* 真实键盘阶梯偏移：每行向右错开 */
+    .kb-row:nth-child(1) { padding-left: 0; }
+    .kb-row:nth-child(2) { padding-left: 22px; }
+    .kb-row:nth-child(3) { padding-left: 50px; }
     .key {
       width: 44px;
       height: 44px;
@@ -471,9 +475,9 @@
       't': 'index',  'g': 'index',  'b': 'index',
       'y': 'index',  'h': 'index',  'n': 'index',
       'u': 'index',  'j': 'index',  'm': 'index',
-      'i': 'middle', 'k': 'middle',
-      'o': 'ring',   'l': 'ring',
-      'p': 'pinky',  ';': 'pinky',
+      'i': 'middle', 'k': 'middle', ',': 'middle',
+      'o': 'ring',   'l': 'ring',   '.': 'ring',
+      'p': 'pinky',  ';': 'pinky',  '/': 'pinky',
       ' ': 'thumb',
     };
     const KEY_HAND = {
@@ -484,9 +488,9 @@
       't':'left','g':'left','b':'left',
       'y':'right','h':'right','n':'right',
       'u':'right','j':'right','m':'right',
-      'i':'right','k':'right',
-      'o':'right','l':'right',
-      'p':'right',';':'right',
+      'i':'right','k':'right',',':'right',
+      'o':'right','l':'right','.':'right',
+      'p':'right',';':'right','/':'right',
       ' ':'thumb',
     };
 
