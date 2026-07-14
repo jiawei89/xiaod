@@ -18,6 +18,16 @@ const nextConfig: NextConfig = {
         source: '/pure-image',
         destination: '/tools/pure-image.html',
       },
+      // 游戏列表页
+      {
+        source: '/game',
+        destination: '/games/index.html',
+      },
+      // 动态映射 /game/xxx → /games/xxx.html
+      {
+        source: '/game/:slug',
+        destination: '/games/:slug.html',
+      },
     ];
   },
 };

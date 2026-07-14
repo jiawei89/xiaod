@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游戏厅 - 小D</title>
+  <meta name="description" content="小D的在线游戏厅 - 打字练习、反应力训练、趣味小游戏">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: #fff;
+      color: #000;
+    }
+    .card { transition: transform 0.3s ease, background 0.3s ease, color 0.3s ease; }
+    .card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0 #000; }
+    .card-dark:hover { box-shadow: 8px 8px 0 #dc2626; }
+    .card-red:hover { box-shadow: 8px 8px 0 #000; }
+  </style>
+</head>
+<body>
+
+  <!-- 导航 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-black">
+    <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="text-2xl font-black tracking-tighter hover:text-red-600 transition-colors">← 小D.</a>
+      <div class="flex gap-4 items-center">
+        <a href="/tool" class="text-sm font-bold tracking-widest hover:text-red-600 transition-colors">工具箱</a>
+        <span class="text-gray-300">|</span>
+        <span class="text-sm font-bold tracking-widest">游戏厅</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主体 -->
+  <main class="min-h-screen pt-24 pb-16 px-6">
+    <div class="max-w-5xl mx-auto">
+
+      <!-- 标题 -->
+      <div class="mb-12">
+        <span class="text-red-600 font-black text-sm tracking-widest">// GAMES</span>
+        <h1 class="text-6xl md:text-8xl font-black leading-none mt-2">
+          游戏<span class="text-red-600">厅</span>
+        </h1>
+        <p class="text-gray-500 mt-4 text-lg">打字练习 · 反应训练 · 趣味挑战 · 持续更新</p>
+      </div>
+
+      <!-- 游戏列表 -->
+      <div class="grid md:grid-cols-2 gap-6" id="gameGrid">
+        <!-- JS 动态渲染 -->
+      </div>
+
+      <!-- 底部 -->
+      <div class="mt-20 text-center">
+        <p class="text-gray-400 text-sm">更多游戏开发中，敬请期待</p>
+        <a href="/" class="inline-block mt-4 px-6 py-2 border-2 border-black font-bold hover:bg-black hover:text-white transition-all">
+          ← 返回首页
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // ========== 游戏数据 ==========
+    const GAMES = [
+      {
+        slug: 'keyboard-practice',
+        name: '键盘练习',
+        desc: '多模式打字训练：基础指法、英文单词、中文文章、编程代码，实时统计 WPM 和准确率',
+        tags: ['打字', '效率', '指法'],
+        status: '可用',
+        icon: '⌨️',
+        theme: 'dark',
+      },
+      {
+        slug: 'reaction-test',
+        name: '反应力测试',
+        desc: '测试你的反应速度，挑战极限毫秒级响应',
+        tags: ['反应', '挑战'],
+        status: '开发中',
+        icon: '⚡',
+        theme: 'light',
+        disabled: true,
+      },
+      {
+        slug: 'memory-cards',
+        name: '记忆翻牌',
+        desc: '经典记忆配对游戏，锻炼你的短时记忆能力',
+        tags: ['记忆', '益智'],
+        status: '开发中',
+        icon: '🃏',
+        theme: 'light',
+        disabled: true,
+      },
+      {
+        slug: 'number-puzzle',
+        name: '数字华容道',
+        desc: '经典数字滑块拼图，挑战最少步数还原',
+        tags: ['益智', '策略'],
+        status: '开发中',
+        icon: '🔢',
+        theme: 'light',
+        disabled: true,
+      },
+    ];
+
+    // ========== 渲染 ==========
+    function render() {
+      const grid = document.getElementById('gameGrid');
+      grid.innerHTML = GAMES.map((g, i) => {
+        const num = String(i + 1).padStart(2, '0');
+        const tagHtml = g.tags.map(tag =>
+          `<span class="px-3 py-1 ${g.theme === 'dark' ? 'bg-white/20' : 'bg-black text-white'} text-xs font-bold">${tag}</span>`
+        ).join('');
+
+        if (g.disabled) {
+          return `
+            <div class="card bg-white border-4 border-black p-8 opacity-60 cursor-not-allowed">
+              <div class="flex justify-between items-start mb-6">
+                <span class="text-6xl font-black text-gray-300">${num}</span>
+                <span class="px-4 py-2 bg-gray-200 text-gray-500 text-sm font-bold">${g.status}</span>
+              </div>
+              <div class="text-4xl mb-3">${g.icon}</div>
+              <h3 class="text-2xl font-black mb-3">${g.name}</h3>
+              <p class="text-gray-400 mb-4">${g.desc}</p>
+              <div class="flex gap-2">${tagHtml}</div>
+            </div>
+          `;
+        }
+
+        if (g.theme === 'dark') {
+          return `
+            <a href="/game/${g.slug}" class="card card-dark block bg-black text-white p-8 hover:bg-red-600">
+              <div class="flex justify-between items-start mb-6">
+                <span class="text-6xl font-black leading-none">${num}</span>
+                <span class="px-4 py-2 bg-white text-black text-sm font-bold">${g.status}</span>
+              </div>
+              <div class="text-4xl mb-3">${g.icon}</div>
+              <h3 class="text-3xl font-black mb-3">${g.name}</h3>
+              <p class="text-gray-300 mb-6">${g.desc}</p>
+              <div class="flex gap-2 mb-6">${tagHtml}</div>
+              <div class="flex items-center text-lg font-black">
+                开始游戏 →
+              </div>
+            </a>
+          `;
+        }
+
+        return `
+          <a href="/game/${g.slug}" class="card block bg-white border-4 border-black p-8 hover:bg-black hover:text-white">
+            <div class="flex justify-between items-start mb-6">
+              <span class="text-6xl font-black text-gray-300">${num}</span>
+              <span class="px-4 py-2 bg-black text-white text-sm font-bold">${g.status}</span>
+            </div>
+            <div class="text-4xl mb-3">${g.icon}</div>
+            <h3 class="text-3xl font-black mb-3">${g.name}</h3>
+            <p class="text-gray-500 mb-6">${g.desc}</p>
+            <div class="flex gap-2 mb-6">${tagHtml}</div>
+            <div class="flex items-center text-lg font-black">
+              开始游戏 →
+            </div>
+          </a>
+        `;
+      }).join('');
+    }
+
+    render();
+  </script>
+
+</body>
+</html>

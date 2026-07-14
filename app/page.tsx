@@ -41,6 +41,7 @@ export default function Home() {
           <div className="hidden md:flex gap-8">
             <button onClick={() => scrollToSection("about")} className="text-sm font-bold hover:line-through transition-all">我是谁</button>
             <button onClick={() => scrollToSection("works")} className="text-sm font-bold hover:line-through transition-all">作品</button>
+            <a href="/game" className="text-sm font-bold hover:line-through transition-all">游戏厅</a>
             <button onClick={() => scrollToSection("contact")} className="text-sm font-bold hover:line-through transition-all">联系</button>
           </div>
 
@@ -60,6 +61,7 @@ export default function Home() {
             <div className="flex flex-col p-6 gap-4">
               <button onClick={() => scrollToSection("about")} className="text-left text-lg font-black hover:pl-4 transition-all">我是谁</button>
               <button onClick={() => scrollToSection("works")} className="text-left text-lg font-black hover:pl-4 transition-all">作品</button>
+              <a href="/game" className="text-left text-lg font-black hover:pl-4 transition-all">游戏厅</a>
               <button onClick={() => scrollToSection("contact")} className="text-left text-lg font-black hover:pl-4 transition-all">联系</button>
             </div>
           </div>
@@ -312,15 +314,23 @@ export default function Home() {
                 </div>
               </a>
 
-              {/* 开发中工具 2 */}
-              <div className="bg-white border-4 border-black p-8">
+              {/* 游戏厅 */}
+              <a
+                href="/game"
+                className="group bg-red-600 text-white p-8 hover:bg-black transition-colors duration-300"
+              >
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="text-6xl font-black text-gray-300">04</span>
-                  <span className="px-4 py-2 bg-gray-200 text-gray-600 text-sm font-bold">开发中</span>
+                  <span className="text-6xl font-black opacity-30 group-hover:opacity-100 transition-opacity">04</span>
+                  <span className="px-4 py-2 bg-white text-red-600 text-sm font-bold group-hover:bg-black group-hover:text-white transition-colors">NEW</span>
                 </div>
-                <h3 className="text-2xl font-black mb-3">文件查看器</h3>
-                <p className="text-gray-600">轻量级本地文件查看器</p>
-              </div>
+                <h3 className="text-2xl font-black mb-3">🎮 游戏厅</h3>
+                <p className="text-white/80 group-hover:text-gray-300 transition-colors mb-4">
+                  键盘练习、反应力测试等趣味小游戏，边玩边提升
+                </p>
+                <div className="flex items-center text-sm font-bold group-hover:translate-x-2 transition-transform duration-300">
+                  开始游戏 →
+                </div>
+              </a>
             </div>
           </div>
         </div>

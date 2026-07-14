@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>键盘练习 - 小D游戏厅</title>
+  <meta name="description" content="多模式键盘打字练习：基础指法、英文单词、编程代码，实时统计 WPM 和准确率">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ===== 屏幕切换 ===== */
+    .screen { display: none; min-height: 100vh; }
+    .screen.active { display: flex; flex-direction: column; }
+
+    /* ===== 模式选择 ===== */
+    .mode-card {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .mode-card:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 6px 6px 0 #dc2626;
+    }
+
+    /* ===== 打字区 ===== */
+    .typing-area {
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+      line-height: 2.2;
+      letter-spacing: 0.5px;
+    }
+
+    .char {
+      position: relative;
+      transition: background 0.1s, color 0.1s;
+      border-radius: 2px;
+      padding: 2px 1px;
+      margin: 0 0.5px;
+    }
+    .char.pending { color: #666; }
+    .char.correct { color: #4ade80; }
+    .char.wrong { color: #f87171; background: rgba(248,113,113,0.15); text-decoration: underline; text-decoration-color: #f87171; }
+    .char.current {
+      color: #fff;
+      background: #dc2626;
+      animation: cursor-blink 1s ease infinite;
+    }
+    @keyframes cursor-blink {
+      0%, 100% { background: #dc2626; }
+      50% { background: #991b1b; }
+    }
+    .char.space-wrong {
+      background: rgba(248,113,113,0.3);
+    }
+
+    /* ===== 虚拟键盘 ===== */
+    .keyboard {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 14px;
+      background: #1a1a1a;
+      border: 2px solid #333;
+      border-radius: 10px;
+    }
+    .kb-row { display: flex; justify-content: center; gap: 5px; }
+    .key {
+      width: 44px;
+      height: 44px;
+      background: #2a2a2a;
+      color: #aaa;
+      border: 1px solid #444;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: "SF Mono", monospace;
+      transition: all 0.08s ease;
+      position: relative;
+    }
+    .key.target {
+      background: #dc2626;
+      color: #fff;
+      border-color: #ef4444;
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(220,38,38,0.5);
+    }
+    .key.pressed {
+      background: #fff;
+      color: #000;
+      transform: scale(0.92);
+    }
+    .key.space { width: 260px; font-size: 11px; }
+
+    /* 手指区域小圆点 */
+    .key .finger-dot {
+      position: absolute;
+      bottom: 3px;
+      right: 4px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      opacity: 0.5;
+    }
+
+    /* ===== 进度条 ===== */
+    .progress-track {
+      width: 100%;
+      height: 4px;
+      background: #222;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #dc2626, #f87171);
+      transition: width 0.2s ease;
+    }
+
+    /* ===== 统计卡片 ===== */
+    .stat-box {
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 12px 20px;
+      text-align: center;
+      min-width: 80px;
+    }
+
+    /* ===== 结果页 ===== */
+    .result-big {
+      font-size: 4rem;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    /* ===== 动画 ===== */
+    @keyframes pop-in {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop-in { animation: pop-in 0.4s ease forwards; }
+
+    @keyframes slide-up-fade {
+      0% { transform: translateY(20px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .slide-up { animation: slide-up-fade 0.3s ease forwards; }
+
+    /* 错误抖动 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    .shake { animation: shake 0.2s ease; }
+
+    /* 滚动条 */
+    .typing-scroll::-webkit-scrollbar { width: 4px; }
+    .typing-scroll::-webkit-scrollbar-track { background: #111; }
+    .typing-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+    /* 按钮 */
+    .btn-primary {
+      background: #dc2626;
+      color: #fff;
+      padding: 12px 32px;
+      font-weight: 800;
+      font-size: 16px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { background: #b91c1c; transform: translateY(-1px); }
+    .btn-ghost {
+      background: transparent;
+      color: #999;
+      padding: 12px 32px;
+      font-weight: 700;
+      font-size: 16px;
+      border: 1px solid #333;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: #666; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- ============ 模式选择 ============ -->
+  <div id="mode-screen" class="screen active">
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
+      <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="/game" class="text-2xl font-black tracking-tighter hover:text-red-500 transition-colors">← 游戏厅</a>
+        <span class="text-sm font-bold tracking-widest text-zinc-500">键盘练习</span>
+      </div>
+    </nav>
+
+    <main class="flex-1 flex items-center justify-center px-6 pt-20 pb-12">
+      <div class="w-full max-w-3xl">
+        <!-- 标题 -->
+        <div class="text-center mb-12">
+          <span class="text-red-500 font-black text-sm tracking-widest">// KEYBOARD PRACTICE</span>
+          <h1 class="text-5xl md:text-7xl font-black leading-none mt-3">
+            键盘<span class="text-red-500">练习</span>
+          </h1>
+          <p class="text-zinc-500 mt-4 text-lg">选择模式，开始训练你的打字速度</p>
+        </div>
+
+        <!-- 模式卡片 -->
+        <div class="grid md:grid-cols-2 gap-5" id="modeGrid"></div>
+
+        <!-- 最佳记录 -->
+        <div class="mt-10 text-center" id="bestRecord"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ 游戏界面 ============ -->
+  <div id="game-screen" class="screen">
+    <!-- 顶部状态栏 -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-md border-b border-zinc-800">
+      <div class="max-w-5xl mx-auto px-6 py-3 flex justify-between items-center gap-4">
+        <button onclick="exitGame()" class="text-zinc-400 hover:text-white text-sm font-bold transition-colors">
+          ← 退出
+        </button>
+        <div class="flex gap-3">
+          <div class="stat-box">
+            <div class="text-xs text-zinc-500 font-bold tracking-wider">WPM</div>
+            <div class="text-xl font-black text-white" id="stat-wpm">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="text-xs text-zinc-500 font-bold tracking-wider">准确率</div>
+            <div class="text-xl font-black text-white" id="stat-acc">100<span class="text-sm">%</span></div>
+          </div>
+          <div class="stat-box">
+            <div class="text-xs text-zinc-500 font-bold tracking-wider">时间</div>
+            <div class="text-xl font-black text-white" id="stat-time">0s</div>
+          </div>
+          <div class="stat-box">
+            <div class="text-xs text-zinc-500 font-bold tracking-wider">进度</div>
+            <div class="text-xl font-black text-white" id="stat-progress">0/0</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 打字区 -->
+    <main class="flex-1 flex flex-col items-center justify-center px-6 pt-20 pb-4 min-h-screen">
+      <!-- 进度条 -->
+      <div class="w-full max-w-3xl mb-6">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- 文字 -->
+      <div id="typingContainer" class="typing-scroll w-full max-w-3xl bg-zinc-950 border border-zinc-800 rounded-xl p-8 mb-6 typing-area text-xl md:text-2xl overflow-y-auto" style="max-height: 280px;"></div>
+
+      <!-- 虚拟键盘 -->
+      <div class="flex justify-center" id="keyboardWrap"></div>
+
+      <!-- 提示 -->
+      <p class="text-zinc-600 text-sm mt-4 text-center" id="hint">直接用键盘打字即可，按下第一个键开始计时</p>
+    </main>
+  </div>
+
+  <!-- ============ 结果界面 ============ -->
+  <div id="result-screen" class="screen">
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
+      <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="/game" class="text-2xl font-black tracking-tighter hover:text-red-500 transition-colors">← 游戏厅</a>
+        <span class="text-sm font-bold tracking-widest text-zinc-500">练习完成</span>
+      </div>
+    </nav>
+
+    <main class="flex-1 flex items-center justify-center px-6 pt-20 pb-12">
+      <div class="w-full max-w-2xl text-center">
+        <div class="pop-in">
+          <p class="text-red-500 font-black tracking-widest text-sm mb-2">// RESULT</p>
+          <h1 class="text-5xl md:text-6xl font-black mb-2">练习完成</h1>
+          <p class="text-zinc-500 mb-10" id="resultMode"></p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6">
+            <p class="text-zinc-500 text-xs font-bold tracking-wider mb-2">WPM</p>
+            <p class="result-big text-red-500" id="res-wpm">0</p>
+          </div>
+          <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6">
+            <p class="text-zinc-500 text-xs font-bold tracking-wider mb-2">准确率</p>
+            <p class="result-big text-white" id="res-acc">0<span class="text-2xl">%</span></p>
+          </div>
+          <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6">
+            <p class="text-zinc-500 text-xs font-bold tracking-wider mb-2">耗时</p>
+            <p class="result-big text-white" id="res-time">0<span class="text-2xl">s</span></p>
+          </div>
+          <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6">
+            <p class="text-zinc-500 text-xs font-bold tracking-wider mb-2">错误</p>
+            <p class="result-big text-white" id="res-errors">0</p>
+          </div>
+        </div>
+
+        <!-- 最佳记录 -->
+        <div id="recordBanner" class="mb-8"></div>
+
+        <!-- 按钮 -->
+        <div class="flex gap-4 justify-center">
+          <button class="btn-primary" onclick="restartSameMode()">再来一次</button>
+          <button class="btn-ghost" onclick="showModeScreen()">换个模式</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ========== 练习内容 ==========
+    const CONTENT = {
+      basic: {
+        name: '基础指法',
+        icon: '⌨️',
+        desc: '从 home row 开始，循序渐进练习指法',
+        tag: '入门',
+        texts: [
+          'asdf jkl; asdf jkl; fjfj fjfj dkdk dkdk slsl slsl',
+          'aajj sskk ddll ff;; aa jj ss kk dd ll ff ;;',
+          'the quick brown fox jumps over the lazy dog',
+          'asdfg ;lkjh asdfg ;lkjh gfdsa hjkkl',
+          'frf juj frf juj ded kik ded kik sws lol apa p;p',
+          'type with all ten fingers without looking at the keyboard',
+        ]
+      },
+      words: {
+        name: '英文单词',
+        icon: '📝',
+        desc: '常用英文单词和短语，提升日常打字速度',
+        tag: '进阶',
+        texts: [
+          'function variable constant return import export default',
+          'async await promise resolve reject callback then catch',
+          'interface implements extends abstract class method property',
+          'const let var array object string number boolean null undefined',
+          'component state props render effect lifecycle mount update unmount',
+          'git commit push pull merge branch rebase origin remote stash',
+          'docker container image volume network build run stop start logs',
+        ]
+      },
+      code: {
+        name: '编程代码',
+        icon: '💻',
+        desc: '真实代码片段，专为程序员设计',
+        tag: '硬核',
+        texts: [
+          'const sum = (a, b) => a + b;',
+          'function fibonacci(n) { if (n <= 1) return n; return fibonacci(n-1) + fibonacci(n-2); }',
+          'const arr = [1, 2, 3].map(x => x * 2).filter(x => x > 2);',
+          'if (!user || !user.isAdmin) return res.status(403).json({ error: "forbidden" });',
+          'const data = await fetch(url).then(r => r.json()).catch(e => console.error(e));',
+          'class Animal { constructor(name) { this.name = name; } speak() { return `${this.name} makes a sound`; } }',
+        ]
+      },
+      article: {
+        name: '英文短文',
+        icon: '📖',
+        desc: '完整段落，挑战持续打字耐力',
+        tag: '挑战',
+        texts: [
+          'The best way to predict the future is to invent it. The changes we make today will shape the world of tomorrow. Every line of code we write is a step toward building something meaningful.',
+          'Programming is not about typing fast. It is about thinking clearly, solving problems creatively, and communicating ideas precisely through code that others can read and understand.',
+          'In the middle of difficulty lies opportunity. The greatest achievements often come from the most challenging problems. Embrace the struggle, learn from failures, and keep moving forward.',
+        ]
+      },
+    };
+
+    // ========== 手指映射 ==========
+    const FINGER_COLORS = {
+      // 左手小指
+      'q': '#6366f1', 'a': '#6366f1', 'z': '#6366f1',
+      // 左手无名指
+      'w': '#8b5cf6', 's': '#8b5cf6', 'x': '#8b5cf6',
+      // 左手中指
+      'e': '#ec4899', 'd': '#ec4899', 'c': '#ec4899',
+      // 左手食指
+      'r': '#f59e0b', 'f': '#f59e0b', 'v': '#f59e0b',
+      't': '#f59e0b', 'g': '#f59e0b', 'b': '#f59e0b',
+      // 右手食指
+      'y': '#10b981', 'h': '#10b981', 'n': '#10b981',
+      'u': '#10b981', 'j': '#10b981', 'm': '#10b981',
+      // 右手中指
+      'i': '#06b6d4', 'k': '#06b6d4',
+      // 右手无名指
+      'o': '#3b82f6', 'l': '#3b82f6',
+      // 右手小指
+      'p': '#6366f1', ';': '#6366f1',
+    };
+
+    // ========== 游戏状态 ==========
+    let currentMode = null;
+    let currentText = '';
+    let currentIndex = 0;
+    let errors = 0;
+    let totalKeystrokes = 0;
+    let correctKeystrokes = 0;
+    let startTime = null;
+    let timerInterval = null;
+    let gameActive = false;
+
+    // ========== DOM ==========
+    const modeScreen = document.getElementById('mode-screen');
+    const gameScreen = document.getElementById('game-screen');
+    const resultScreen = document.getElementById('result-screen');
+
+    // ========== 初始化 ==========
+    function init() {
+      renderModes();
+      renderBestRecord();
+      buildKeyboard();
+      bindKeyboard();
+    }
+
+    function renderModes() {
+      const grid = document.getElementById('modeGrid');
+      const modes = Object.entries(CONTENT);
+      grid.innerHTML = modes.map(([key, m], i) => `
+        <div class="mode-card bg-zinc-950 border border-zinc-800 hover:border-red-600 p-6 rounded-xl slide-up"
+             style="animation-delay: ${i * 0.08}s" onclick="startGame('${key}')">
+          <div class="flex justify-between items-start mb-4">
+            <span class="text-4xl">${m.icon}</span>
+            <span class="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold rounded">${m.tag}</span>
+          </div>
+          <h3 class="text-2xl font-black mb-2">${m.name}</h3>
+          <p class="text-zinc-500 text-sm">${m.desc}</p>
+        </div>
+      `).join('');
+    }
+
+    function renderBestRecord() {
+      const best = JSON.parse(localStorage.getItem('kbBestRecord') || '{}');
+      const entries = Object.entries(best);
+      if (entries.length === 0) {
+        document.getElementById('bestRecord').innerHTML =
+          '<p class="text-zinc-600 text-sm">还没有记录，开始第一次练习吧</p>';
+        return;
+      }
+      let html = '<div class="flex flex-wrap gap-4 justify-center">';
+      for (const [mode, rec] of entries) {
+        html += `<div class="text-sm text-zinc-500">
+          ${CONTENT[mode].icon} ${CONTENT[mode].name}:
+          <span class="text-red-500 font-bold">${rec.wpm} WPM</span>
+          <span class="text-zinc-600">/ ${rec.acc}%</span>
+        </div>`;
+      }
+      html += '</div>';
+      document.getElementById('bestRecord').innerHTML = html;
+    }
+
+    // ========== 虚拟键盘 ==========
+    const KB_LAYOUT = [
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l',';'],
+      ['z','x','c','v','b','n','m',',','.','/'],
+    ];
+
+    function buildKeyboard() {
+      const wrap = document.getElementById('keyboardWrap');
+      let html = '<div class="keyboard">';
+      for (const row of KB_LAYOUT) {
+        html += '<div class="kb-row">';
+        for (const k of row) {
+          const color = FINGER_COLORS[k] || '#666';
+          const label = k === ';' ? ';' : k.toUpperCase();
+          html += `<div class="key" data-key="${k}">${label}<span class="finger-dot" style="background:${color}"></span></div>`;
+        }
+        html += '</div>';
+      }
+      // 空格行
+      html += '<div class="kb-row"><div class="key space" data-key=" ">␣ SPACE</div></div>';
+      html += '</div>';
+      wrap.innerHTML = html;
+    }
+
+    function highlightTargetKey(char) {
+      document.querySelectorAll('.key.target').forEach(k => k.classList.remove('target'));
+      const lower = char.toLowerCase();
+      const keyEl = document.querySelector(`.key[data-key="${lower === ' ' ? ' ' : lower}"]`);
+      if (keyEl) keyEl.classList.add('target');
+    }
+
+    function pressKeyVisual(char) {
+      const lower = char.toLowerCase();
+      const keyEl = document.querySelector(`.key[data-key="${lower === ' ' ? ' ' : lower}"]`);
+      if (keyEl) {
+        keyEl.classList.add('pressed');
+        setTimeout(() => keyEl.classList.remove('pressed'), 100);
+      }
+    }
+
+    function bindKeyboard() {
+      document.querySelectorAll('.key').forEach(key => {
+        const ch = key.dataset.key;
+        key.addEventListener('click', () => {
+          if (gameActive) handleInput(ch);
+        });
+      });
+    }
+
+    // ========== 游戏流程 ==========
+    function startGame(mode) {
+      currentMode = mode;
+      const texts = CONTENT[mode].texts;
+      currentText = texts[Math.floor(Math.random() * texts.length)];
+      currentIndex = 0;
+      errors = 0;
+      totalKeystrokes = 0;
+      correctKeystrokes = 0;
+      startTime = null;
+      gameActive = true;
+
+      if (timerInterval) clearInterval(timerInterval);
+
+      renderTypingArea();
+      updateStats();
+      updateProgress();
+
+      switchScreen(gameScreen);
+      highlightTargetKey(currentText[0]);
+      document.getElementById('hint').textContent = '直接用键盘打字即可，按下第一个键开始计时';
+    }
+
+    function renderTypingArea() {
+      const container = document.getElementById('typingContainer');
+      let html = '';
+      for (let i = 0; i < currentText.length; i++) {
+        const ch = currentText[i];
+        const display = ch === ' ' ? '·' : ch;
+        const cls = i === 0 ? 'char current' : 'char pending';
+        html += `<span class="${cls}" data-idx="${i}">${display}</span>`;
+      }
+      // 游标
+      html += '<span class="char pending" style="opacity:0.3;">|</span>';
+      container.innerHTML = html;
+      container.scrollTop = 0;
+    }
+
+    function handleInput(char) {
+      if (!gameActive || currentIndex >= currentText.length) return;
+
+      // 首次按键开始计时
+      if (!startTime) {
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 100);
+        document.getElementById('hint').textContent = '加油！保持节奏 💪';
+      }
+
+      const targetChar = currentText[currentIndex];
+      totalKeystrokes++;
+      pressKeyVisual(char);
+
+      const chars = document.querySelectorAll('.char');
+      const currentEl = chars[currentIndex];
+
+      if (char === targetChar || (char === ' ' && targetChar === ' ')) {
+        // 正确
+        correctKeystrokes++;
+        currentEl.classList.remove('current', 'pending');
+        currentEl.classList.add('correct');
+        if (targetChar === ' ') currentEl.textContent = ' ';
+        currentIndex++;
+
+        // 高亮下一个
+        if (currentIndex < currentText.length) {
+          chars[currentIndex].classList.remove('pending');
+          chars[currentIndex].classList.add('current');
+          highlightTargetKey(currentText[currentIndex]);
+
+          // 自动滚动到当前字符
+          if (chars[currentIndex].offsetTop > 80) {
+            document.getElementById('typingContainer').scrollTop += 40;
+          }
+        }
+      } else {
+        // 错误
+        errors++;
+        currentEl.classList.add('wrong', 'shake');
+        if (targetChar === ' ') currentEl.classList.add('space-wrong');
+        setTimeout(() => currentEl.classList.remove('shake'), 200);
+      }
+
+      updateStats();
+      updateProgress();
+
+      // 完成
+      if (currentIndex >= currentText.length) {
+        finishGame();
+      }
+    }
+
+    function updateStats() {
+      const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
+      const minutes = elapsed / 60;
+      const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
+      const acc = totalKeystrokes > 0 ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+
+      document.getElementById('stat-wpm').textContent = wpm;
+      document.getElementById('stat-acc').innerHTML = acc + '<span class="text-sm">%</span>';
+      document.getElementById('stat-progress').textContent = currentIndex + '/' + currentText.length;
+    }
+
+    function updateTimer() {
+      if (!startTime) return;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      document.getElementById('stat-time').textContent = elapsed + 's';
+      updateStats();
+    }
+
+    function updateProgress() {
+      const pct = (currentIndex / currentText.length) * 100;
+      document.getElementById('progressBar').style.width = pct + '%';
+    }
+
+    function finishGame() {
+      gameActive = false;
+      clearInterval(timerInterval);
+
+      const elapsed = (Date.now() - startTime) / 1000;
+      const minutes = elapsed / 60;
+      const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
+      const acc = totalKeystrokes > 0 ? Math.round((correctKeystrokes / totalKeystrokes) * 100) : 100;
+
+      // 显示结果
+      document.getElementById('res-wpm').textContent = wpm;
+      document.getElementById('res-acc').innerHTML = acc + '<span class="text-2xl">%</span>';
+      document.getElementById('res-time').innerHTML = Math.round(elapsed) + '<span class="text-2xl">s</span>';
+      document.getElementById('res-errors').textContent = errors;
+      document.getElementById('resultMode').textContent = CONTENT[currentMode].icon + ' ' + CONTENT[currentMode].name;
+
+      // 检查最佳记录
+      const best = JSON.parse(localStorage.getItem('kbBestRecord') || '{}');
+      const prev = best[currentMode];
+      const banner = document.getElementById('recordBanner');
+
+      if (!prev || wpm > prev.wpm) {
+        best[currentMode] = { wpm, acc, time: Math.round(elapsed) };
+        localStorage.setItem('kbBestRecord', JSON.stringify(best));
+        banner.innerHTML = `<div class="inline-block px-6 py-3 bg-red-600 text-white font-black text-lg rounded-lg pop-in">
+          🎉 新纪录！超越了之前的最佳成绩
+        </div>`;
+      } else if (prev) {
+        banner.innerHTML = `<div class="text-zinc-500 text-sm">
+          最佳记录: <span class="text-red-500 font-bold">${prev.wpm} WPM</span>
+          <span class="text-zinc-600">/ ${prev.acc}%</span>
+        </div>`;
+      }
+
+      switchScreen(resultScreen);
+    }
+
+    function restartSameMode() {
+      startGame(currentMode);
+    }
+
+    function showModeScreen() {
+      renderBestRecord();
+      switchScreen(modeScreen);
+    }
+
+    function exitGame() {
+      gameActive = false;
+      clearInterval(timerInterval);
+      showModeScreen();
+    }
+
+    function switchScreen(screen) {
+      [modeScreen, gameScreen, resultScreen].forEach(s => s.classList.remove('active'));
+      screen.classList.add('active');
+    }
+
+    // ========== 键盘监听 ==========
+    document.addEventListener('keydown', (e) => {
+      if (!gameScreen.classList.contains('active')) return;
+      if (!gameActive) return;
+
+      // 阻止默认行为（空格滚动等）
+      if (e.key.length === 1 || e.key === ' ') e.preventDefault();
+
+      if (e.key === 'Escape') { exitGame(); return; }
+
+      if (e.key.length === 1) {
+        handleInput(e.key);
+      }
+    });
+
+    // 启动
+    init();
+  </script>
+
+</body>
+</html>
