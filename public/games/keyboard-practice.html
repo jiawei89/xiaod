@@ -74,43 +74,104 @@
     .key {
       width: 44px;
       height: 44px;
-      background: #2a2a2a;
-      color: #aaa;
-      border: 1px solid #444;
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
       font-family: "SF Mono", monospace;
-      transition: all 0.08s ease;
-      position: relative;
+      color: #fff;
+      transition: transform 0.1s, box-shadow 0.1s, filter 0.1s;
+      user-select: none;
+      cursor: pointer;
+    }
+    .key.space { width: 280px; font-size: 12px; }
+
+    /* ===== 手指颜色分区（按键整块上色） ===== */
+    .key.f-pinky  { background: #4dabf7; }   /* 小指 - 蓝 */
+    .key.f-ring   { background: #69db7c; }   /* 无名指 - 绿 */
+    .key.f-middle { background: #ffd43b; color: #333; } /* 中指 - 黄 */
+    .key.f-index  { background: #ff8787; }   /* 食指 - 红 */
+    .key.f-thumb  { background: #adb5bd; color: #333; } /* 拇指 - 灰 */
+
+    .key.pressed {
+      transform: scale(0.90);
+      filter: brightness(1.3);
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.3);
     }
     .key.target {
-      background: #dc2626;
-      color: #fff;
-      border-color: #ef4444;
-      transform: scale(1.08);
-      box-shadow: 0 0 12px rgba(220,38,38,0.5);
+      transform: scale(1.12);
+      box-shadow: 0 0 0 3px #fff, 0 0 0 5px #dc2626, 0 0 16px rgba(220,38,38,0.6);
+      animation: key-pulse 1s infinite;
+      z-index: 2;
     }
-    .key.pressed {
-      background: #fff;
-      color: #000;
-      transform: scale(0.92);
+    @keyframes key-pulse {
+      0%, 100% { transform: scale(1.12); }
+      50% { transform: scale(1.18); }
     }
-    .key.space { width: 260px; font-size: 11px; }
 
-    /* 手指区域小圆点 */
-    .key .finger-dot {
-      position: absolute;
-      bottom: 3px;
-      right: 4px;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      opacity: 0.5;
+    /* ===== 双手手指指示器 ===== */
+    .hands {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 50px;
+      padding: 20px 12px 12px;
     }
+    .hand {
+      position: relative;
+      width: 150px;
+      height: 100px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 5px;
+    }
+    .finger {
+      width: 26px;
+      border-radius: 13px 13px 5px 5px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .finger.f-pinky   { height: 40px; background: #4dabf7; }
+    .finger.f-ring    { height: 55px; background: #69db7c; }
+    .finger.f-middle  { height: 65px; background: #ffd43b; }
+    .finger.f-index   { height: 52px; background: #ff8787; }
+    .finger.f-thumb {
+      height: 34px;
+      width: 30px;
+      background: #adb5bd;
+      border-radius: 15px;
+    }
+    .left-hand .finger.f-thumb  { transform: rotate(-25deg); margin-right: 2px; }
+    .right-hand .finger.f-thumb { transform: rotate(25deg);  margin-left: 2px; }
+
+    .finger.glow {
+      transform: scale(1.5);
+      box-shadow: 0 0 0 4px #fff, 0 0 20px 8px rgba(255,255,255,0.9), 0 0 35px 12px rgba(255,215,0,0.5);
+      z-index: 5;
+      filter: brightness(1.2);
+      animation: finger-shine 0.8s ease infinite alternate;
+    }
+    .left-hand .finger.f-thumb.glow  { transform: rotate(-25deg) scale(1.5); }
+    .right-hand .finger.f-thumb.glow { transform: rotate(25deg) scale(1.5); }
+
+    @keyframes finger-shine {
+      0%   { box-shadow: 0 0 0 4px #fff, 0 0 16px 6px rgba(255,255,255,0.8), 0 0 28px 10px rgba(255,215,0,0.4); }
+      100% { box-shadow: 0 0 0 5px #fff, 0 0 26px 12px rgba(255,255,255,1), 0 0 42px 16px rgba(255,215,0,0.7); }
+    }
+
+    .hand-label {
+      position: absolute;
+      bottom: -8px;
+      font-size: 36px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.12);
+      z-index: 0;
+    }
+    .left-hand .hand-label  { left: 46px; }
+    .right-hand .hand-label { right: 46px; }
 
     /* ===== 进度条 ===== */
     .progress-track {
@@ -269,6 +330,26 @@
       <!-- 虚拟键盘 -->
       <div class="flex justify-center" id="keyboardWrap"></div>
 
+      <!-- 双手手指指示器 -->
+      <div class="hands" id="handsWrap">
+        <div class="hand left-hand">
+          <div class="finger f-pinky"   data-finger="left-pinky"></div>
+          <div class="finger f-ring"    data-finger="left-ring"></div>
+          <div class="finger f-middle"  data-finger="left-middle"></div>
+          <div class="finger f-index"   data-finger="left-index"></div>
+          <div class="finger f-thumb"   data-finger="left-thumb"></div>
+          <span class="hand-label">L</span>
+        </div>
+        <div class="hand right-hand">
+          <div class="finger f-thumb"   data-finger="right-thumb"></div>
+          <div class="finger f-index"   data-finger="right-index"></div>
+          <div class="finger f-middle"  data-finger="right-middle"></div>
+          <div class="finger f-ring"    data-finger="right-ring"></div>
+          <div class="finger f-pinky"   data-finger="right-pinky"></div>
+          <span class="hand-label">R</span>
+        </div>
+      </div>
+
       <!-- 提示 -->
       <p class="text-zinc-600 text-sm mt-4 text-center" id="hint">直接用键盘打字即可，按下第一个键开始计时</p>
     </main>
@@ -381,26 +462,32 @@
       },
     };
 
-    // ========== 手指映射 ==========
-    const FINGER_COLORS = {
-      // 左手小指
-      'q': '#6366f1', 'a': '#6366f1', 'z': '#6366f1',
-      // 左手无名指
-      'w': '#8b5cf6', 's': '#8b5cf6', 'x': '#8b5cf6',
-      // 左手中指
-      'e': '#ec4899', 'd': '#ec4899', 'c': '#ec4899',
-      // 左手食指
-      'r': '#f59e0b', 'f': '#f59e0b', 'v': '#f59e0b',
-      't': '#f59e0b', 'g': '#f59e0b', 'b': '#f59e0b',
-      // 右手食指
-      'y': '#10b981', 'h': '#10b981', 'n': '#10b981',
-      'u': '#10b981', 'j': '#10b981', 'm': '#10b981',
-      // 右手中指
-      'i': '#06b6d4', 'k': '#06b6d4',
-      // 右手无名指
-      'o': '#3b82f6', 'l': '#3b82f6',
-      // 右手小指
-      'p': '#6366f1', ';': '#6366f1',
+    // ========== 手指映射（每个按键 → 手指类型 + 左右手） ==========
+    const KEY_FINGER = {
+      'q': 'pinky',  'a': 'pinky',  'z': 'pinky',
+      'w': 'ring',   's': 'ring',   'x': 'ring',
+      'e': 'middle', 'd': 'middle', 'c': 'middle',
+      'r': 'index',  'f': 'index',  'v': 'index',
+      't': 'index',  'g': 'index',  'b': 'index',
+      'y': 'index',  'h': 'index',  'n': 'index',
+      'u': 'index',  'j': 'index',  'm': 'index',
+      'i': 'middle', 'k': 'middle',
+      'o': 'ring',   'l': 'ring',
+      'p': 'pinky',  ';': 'pinky',
+      ' ': 'thumb',
+    };
+    const KEY_HAND = {
+      'q':'left','a':'left','z':'left',
+      'w':'left','s':'left','x':'left',
+      'e':'left','d':'left','c':'left',
+      'r':'left','f':'left','v':'left',
+      't':'left','g':'left','b':'left',
+      'y':'right','h':'right','n':'right',
+      'u':'right','j':'right','m':'right',
+      'i':'right','k':'right',
+      'o':'right','l':'right',
+      'p':'right',';':'right',
+      ' ':'thumb',
     };
 
     // ========== 游戏状态 ==========
@@ -476,23 +563,43 @@
       for (const row of KB_LAYOUT) {
         html += '<div class="kb-row">';
         for (const k of row) {
-          const color = FINGER_COLORS[k] || '#666';
+          const finger = KEY_FINGER[k] || 'index';
           const label = k === ';' ? ';' : k.toUpperCase();
-          html += `<div class="key" data-key="${k}">${label}<span class="finger-dot" style="background:${color}"></span></div>`;
+          html += `<div class="key f-${finger}" data-key="${k}">${label}</div>`;
         }
         html += '</div>';
       }
       // 空格行
-      html += '<div class="kb-row"><div class="key space" data-key=" ">␣ SPACE</div></div>';
+      html += '<div class="kb-row"><div class="key space f-thumb" data-key=" ">␣ SPACE</div></div>';
       html += '</div>';
       wrap.innerHTML = html;
     }
 
     function highlightTargetKey(char) {
+      // 高亮目标按键
       document.querySelectorAll('.key.target').forEach(k => k.classList.remove('target'));
       const lower = char.toLowerCase();
       const keyEl = document.querySelector(`.key[data-key="${lower === ' ' ? ' ' : lower}"]`);
       if (keyEl) keyEl.classList.add('target');
+
+      // 高亮对应手指
+      highlightFinger(lower);
+    }
+
+    function highlightFinger(char) {
+      document.querySelectorAll('.finger.glow').forEach(f => f.classList.remove('glow'));
+      const finger = KEY_FINGER[char];
+      const hand = KEY_HAND[char];
+      if (!finger || !hand || hand === 'thumb') {
+        // 拇指 → 高亮双手拇指
+        if (finger === 'thumb') {
+          document.querySelector('.finger[data-finger="left-thumb"]')?.classList.add('glow');
+          document.querySelector('.finger[data-finger="right-thumb"]')?.classList.add('glow');
+        }
+        return;
+      }
+      const fingerEl = document.querySelector(`.finger[data-finger="${hand}-${finger}"]`);
+      if (fingerEl) fingerEl.classList.add('glow');
     }
 
     function pressKeyVisual(char) {
