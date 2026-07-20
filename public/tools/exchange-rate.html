@@ -57,7 +57,7 @@
         <h1 class="text-5xl md:text-6xl font-black leading-none mt-2">
           汇率<span class="text-red-600">转换</span>
         </h1>
-        <p class="text-gray-500 mt-3 text-lg">实时汇率 · 手续费计算 · 支持6种主流货币</p>
+        <p class="text-gray-500 mt-3 text-lg">实时汇率 · 手续费计算 · 支持7种主流货币</p>
       </div>
 
       <!-- 转换卡片 -->
@@ -163,6 +163,7 @@
       { code: 'JPY', name: '日元',   flag: '🇯🇵' },
       { code: 'HKD', name: '港币',   flag: '🇭🇰' },
       { code: 'THB', name: '泰铢',   flag: '🇹🇭' },
+      { code: 'TWD', name: '台币',   flag: '🇹🇼' },
     ];
 
     const CURRENCY_MAP = Object.fromEntries(CURRENCIES.map(c => [c.code, c]));
@@ -259,7 +260,7 @@
       const net     = gross - feeAmt;            // 实际到账
 
       // 填充结果（number input 不支持逗号，用原始数字）
-      toInp.value = net.toFixed((to === 'JPY' || to === 'THB') ? 0 : 2);
+      toInp.value = net.toFixed((to === 'JPY' || to === 'THB' || to === 'TWD') ? 0 : 2);
 
       // 明细
       const fromC = CURRENCY_MAP[from];
@@ -277,7 +278,7 @@
     // ========== 格式化 ==========
     function formatNum(n, code) {
       // 日元/泰铢不留小数，其他保留2位
-      const decimals = (code === 'JPY' || code === 'THB') ? 0 : 2;
+      const decimals = (code === 'JPY' || code === 'THB' || code === 'TWD') ? 0 : 2;
       return n.toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals,
