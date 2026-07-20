@@ -213,10 +213,11 @@
     function switchUnit(unit) {
       if (unit === currentUnit) return;
 
-      // 换算当前已填数据
+      // 换算当前已填数据（统一先转成标准单位，再转成目标单位）
+      const oldUnit = currentUnit;
       const weightVal = parseFloat(document.getElementById('weightInput').value);
       let heightCm = null;
-      if (currentUnit === 'metric') {
+      if (oldUnit === 'metric') {
         const cm = parseFloat(document.getElementById('heightCm').value);
         if (cm && cm > 0) heightCm = cm;
       } else {
@@ -250,8 +251,10 @@
       }
       if (weightVal && weightVal > 0) {
         if (unit === 'metric') {
-          document.getElementById('weightInput').value = Math.round(weightVal / 0.453592 * 10) / 10;
+          // lb → kg
+          document.getElementById('weightInput').value = Math.round(weightVal * 0.453592 * 10) / 10;
         } else {
+          // kg → lb
           document.getElementById('weightInput').value = Math.round(weightVal * 2.20462 * 10) / 10;
         }
       }
