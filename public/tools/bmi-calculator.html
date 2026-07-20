@@ -211,6 +211,21 @@
     let currentUnit = 'metric';
 
     function switchUnit(unit) {
+      if (unit === currentUnit) return;
+
+      // 换算当前已填数据
+      const weightVal = parseFloat(document.getElementById('weightInput').value);
+      let heightCm = null;
+      if (currentUnit === 'metric') {
+        const cm = parseFloat(document.getElementById('heightCm').value);
+        if (cm && cm > 0) heightCm = cm;
+      } else {
+        const ft = parseFloat(document.getElementById('heightFt').value) || 0;
+        const inch = parseFloat(document.getElementById('heightIn').value) || 0;
+        const totalIn = ft * 12 + inch;
+        if (totalIn > 0) heightCm = totalIn * 2.54;
+      }
+
       currentUnit = unit;
       document.querySelectorAll('.unit-btn').forEach(b => {
         b.classList.toggle('active', b.dataset.unit === unit);
@@ -218,9 +233,28 @@
       document.getElementById('heightMetric').classList.toggle('hidden', unit !== 'metric');
       document.getElementById('heightImperial').classList.toggle('hidden', unit !== 'imperial');
       document.getElementById('weightUnit').textContent = unit === 'metric' ? 'kg' : 'lb';
-      // 更新 placeholder
       document.getElementById('heightCm').placeholder = '170';
       document.getElementById('weightInput').placeholder = unit === 'metric' ? '65' : '143';
+
+      // 填入换算后的值
+      if (heightCm !== null) {
+        if (unit === 'metric') {
+          document.getElementById('heightCm').value = Math.round(heightCm * 10) / 10;
+        } else {
+          const totalIn = heightCm / 2.54;
+          const ft = Math.floor(totalIn / 12);
+          const inch = Math.round(totalIn % 12);
+          document.getElementById('heightFt').value = ft;
+          document.getElementById('heightIn').value = inch;
+        }
+      }
+      if (weightVal && weightVal > 0) {
+        if (unit === 'metric') {
+          document.getElementById('weightInput').value = Math.round(weightVal / 0.453592 * 10) / 10;
+        } else {
+          document.getElementById('weightInput').value = Math.round(weightVal * 2.20462 * 10) / 10;
+        }
+      }
     }
 
     function getHeightM() {
