@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMI计算器 - 小D工具</title>
+  <meta name="description" content="在线BMI身体质量指数计算器，输入身高体重即可计算BMI，支持公制/英制，含健康评估">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: #fff;
+      color: #000;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    .result-pop { animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    @keyframes pop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .bar-fill { transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+    .bar-marker { transition: left 0.6s cubic-bezier(0.25, 1, 0.5, 1); }
+    .unit-btn {
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .unit-btn.active {
+      background: #000;
+      color: #fff;
+    }
+    .unit-btn:not(.active):hover {
+      background: #f3f4f6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 导航 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-black">
+    <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/" class="text-2xl font-black tracking-tighter hover:text-red-600 transition-colors">← 小D.</a>
+      <a href="/tool" class="text-sm font-bold tracking-widest hover:text-red-600 transition-colors">BMI计算器</a>
+    </div>
+  </nav>
+
+  <!-- 主体 -->
+  <main class="min-h-screen pt-24 pb-16 px-6 flex items-start justify-center">
+    <div class="w-full max-w-2xl">
+
+      <!-- 标题区 -->
+      <div class="mb-8">
+        <span class="text-red-600 font-black text-sm tracking-widest">// TOOL</span>
+        <h1 class="text-5xl md:text-6xl font-black leading-none mt-2">
+          BMI<span class="text-red-600">计算</span>
+        </h1>
+        <p class="text-gray-500 mt-3 text-lg">身体质量指数 · 健康评估 · 本地计算</p>
+      </div>
+
+      <!-- 单位切换 -->
+      <div class="flex gap-2 mb-4">
+        <button class="unit-btn active px-5 py-2 border-2 border-black font-black text-sm" data-unit="metric" onclick="switchUnit('metric')">公制 cm/kg</button>
+        <button class="unit-btn px-5 py-2 border-2 border-black font-black text-sm" data-unit="imperial" onclick="switchUnit('imperial')">英制 ft+lb</button>
+      </div>
+
+      <!-- 输入卡片 -->
+      <div class="bg-black text-white p-6 md:p-10 mb-4">
+
+        <!-- 身高 -->
+        <div class="mb-6" id="heightBlock">
+          <label class="text-xs font-bold tracking-widest text-gray-400 mb-3 block">身高</label>
+          <!-- 公制 -->
+          <div id="heightMetric" class="flex items-end gap-3">
+            <div class="flex-1">
+              <input id="heightCm" type="number" placeholder="170" min="50" max="300" step="0.1"
+                class="w-full bg-white text-black px-4 py-4 font-black text-3xl outline-none" />
+            </div>
+            <span class="text-gray-400 text-lg font-bold pb-4">cm</span>
+          </div>
+          <!-- 英制 -->
+          <div id="heightImperial" class="flex items-end gap-3 hidden">
+            <div class="flex-1">
+              <input id="heightFt" type="number" placeholder="5" min="1" max="9" step="1"
+                class="w-full bg-white text-black px-4 py-4 font-black text-3xl outline-none" />
+            </div>
+            <span class="text-gray-400 text-lg font-bold pb-4">ft</span>
+            <div class="flex-1">
+              <input id="heightIn" type="number" placeholder="7" min="0" max="11" step="1"
+                class="w-full bg-white text-black px-4 py-4 font-black text-3xl outline-none" />
+            </div>
+            <span class="text-gray-400 text-lg font-bold pb-4">in</span>
+          </div>
+        </div>
+
+        <!-- 体重 -->
+        <div class="mb-8">
+          <label class="text-xs font-bold tracking-widest text-gray-400 mb-3 block">体重</label>
+          <div class="flex items-end gap-3">
+            <div class="flex-1">
+              <input id="weightInput" type="number" placeholder="65" min="1" max="500" step="0.1"
+                class="w-full bg-white text-black px-4 py-4 font-black text-3xl outline-none" />
+            </div>
+            <span id="weightUnit" class="text-gray-400 text-lg font-bold pb-4">kg</span>
+          </div>
+        </div>
+
+        <!-- 计算按钮 -->
+        <button onclick="calculate()"
+          class="w-full bg-red-600 text-white py-5 font-black text-xl tracking-wider hover:bg-red-700 transition-colors active:scale-[0.98]">
+          计算 BMI →
+        </button>
+      </div>
+
+      <!-- 结果区（默认隐藏） -->
+      <div id="resultArea" class="hidden">
+
+        <!-- BMI 数值 -->
+        <div id="resultCard" class="bg-black text-white p-6 md:p-10 mb-4 result-pop">
+          <div class="text-center">
+            <p class="text-xs font-bold tracking-widest text-gray-400 mb-2">你的 BMI</p>
+            <p id="bmiValue" class="text-7xl md:text-8xl font-black leading-none">--</p>
+            <p id="bmiCategory" class="text-2xl font-black mt-4">--</p>
+          </div>
+        </div>
+
+        <!-- BMI 范围条 -->
+        <div class="bg-white border-4 border-black p-6 mb-4 result-pop" style="animation-delay: 0.1s">
+          <p class="text-xs font-bold tracking-widest text-gray-400 mb-4">BMI 范围对照</p>
+          <div class="relative">
+            <!-- 色带 -->
+            <div class="h-10 rounded-sm overflow-hidden flex">
+              <div class="bg-blue-400 h-full" style="width: 28.6%"></div>
+              <div class="bg-green-500 h-full" style="width: 21.4%"></div>
+              <div class="bg-yellow-400 h-full" style="width: 21.4%"></div>
+              <div class="bg-orange-500 h-full" style="width: 14.3%"></div>
+              <div class="bg-red-600 h-full" style="width: 14.3%"></div>
+            </div>
+            <!-- 标签 -->
+            <div class="flex justify-between mt-2 text-xs font-bold text-gray-400">
+              <span>偏瘦<br>&lt;18.5</span>
+              <span>正常<br>18.5-24</span>
+              <span>偏胖<br>24-28</span>
+              <span>肥胖<br>28-32</span>
+              <span>重度<br>≥32</span>
+            </div>
+            <!-- 指针 -->
+            <div id="bmiMarker" class="bar-marker absolute -top-2 w-1 h-14 bg-black" style="left: 50%">
+              <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs font-black px-2 py-0.5 rounded whitespace-nowrap">
+                ▼ 你的位置
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 健康建议 -->
+        <div id="adviceCard" class="bg-white border-4 border-black p-6 result-pop" style="animation-delay: 0.2s">
+          <p class="text-xs font-bold tracking-widest text-gray-400 mb-3">健康建议</p>
+          <p id="adviceText" class="text-lg leading-relaxed">--</p>
+        </div>
+
+        <!-- 重新计算 -->
+        <div class="mt-6 text-center">
+          <button onclick="resetForm()"
+            class="px-8 py-3 border-2 border-black font-black hover:bg-black hover:text-white transition-all">
+            重新输入
+          </button>
+        </div>
+      </div>
+
+      <!-- 说明卡片 -->
+      <div class="bg-gray-50 border-4 border-black p-6 mt-4">
+        <p class="text-xs font-bold tracking-widest text-gray-400 mb-3">关于 BMI</p>
+        <div class="text-sm text-gray-600 leading-relaxed space-y-2">
+          <p><strong class="text-black">BMI（身体质量指数）</strong>= 体重(kg) ÷ 身高(m)²</p>
+          <p>是世界卫生组织推荐的评估体重与身高比例的指标。中国成人 BMI 标准采用了更适合亚洲人体质的切点：</p>
+          <div class="grid grid-cols-5 gap-2 mt-3 text-center">
+            <div class="bg-blue-100 p-2 rounded">
+              <p class="text-blue-600 font-black text-xs">偏瘦</p>
+              <p class="text-xs">&lt;18.5</p>
+            </div>
+            <div class="bg-green-100 p-2 rounded">
+              <p class="text-green-600 font-black text-xs">正常</p>
+              <p class="text-xs">18.5-24</p>
+            </div>
+            <div class="bg-yellow-100 p-2 rounded">
+              <p class="text-yellow-600 font-black text-xs">偏胖</p>
+              <p class="text-xs">24-28</p>
+            </div>
+            <div class="bg-orange-100 p-2 rounded">
+              <p class="text-orange-600 font-black text-xs">肥胖</p>
+              <p class="text-xs">28-32</p>
+            </div>
+            <div class="bg-red-100 p-2 rounded">
+              <p class="text-red-600 font-black text-xs">重度</p>
+              <p class="text-xs">≥32</p>
+            </div>
+          </div>
+          <p class="mt-3">⚠️ BMI 仅为参考指标，不区分肌肉和脂肪比例。运动员等肌肉量大的人群 BMI 可能偏高，需结合体脂率综合判断。</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    let currentUnit = 'metric';
+
+    function switchUnit(unit) {
+      currentUnit = unit;
+      document.querySelectorAll('.unit-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.unit === unit);
+      });
+      document.getElementById('heightMetric').classList.toggle('hidden', unit !== 'metric');
+      document.getElementById('heightImperial').classList.toggle('hidden', unit !== 'imperial');
+      document.getElementById('weightUnit').textContent = unit === 'metric' ? 'kg' : 'lb';
+      // 更新 placeholder
+      document.getElementById('heightCm').placeholder = '170';
+      document.getElementById('weightInput').placeholder = unit === 'metric' ? '65' : '143';
+    }
+
+    function getHeightM() {
+      if (currentUnit === 'metric') {
+        const cm = parseFloat(document.getElementById('heightCm').value);
+        if (!cm || cm <= 0) return null;
+        return cm / 100;
+      } else {
+        const ft = parseFloat(document.getElementById('heightFt').value) || 0;
+        const inch = parseFloat(document.getElementById('heightIn').value) || 0;
+        const totalIn = ft * 12 + inch;
+        if (totalIn <= 0) return null;
+        return totalIn * 0.0254;
+      }
+    }
+
+    function getWeightKg() {
+      const w = parseFloat(document.getElementById('weightInput').value);
+      if (!w || w <= 0) return null;
+      if (currentUnit === 'imperial') return w * 0.453592;
+      return w;
+    }
+
+    function calculate() {
+      const height = getHeightM();
+      const weight = getWeightKg();
+
+      if (!height || !weight) {
+        alert('请输入有效的身高和体重');
+        return;
+      }
+      if (height < 0.5 || height > 3) {
+        alert('身高范围应在 50-300cm 之间');
+        return;
+      }
+      if (weight < 10 || weight > 500) {
+        alert('体重范围应在 10-500kg 之间');
+        return;
+      }
+
+      const bmi = weight / (height * height);
+      const bmiRounded = Math.round(bmi * 10) / 10;
+
+      // 分类（中国标准）
+      let category, color, advice;
+      if (bmi < 18.5) {
+        category = '偏瘦';
+        color = '#60a5fa';
+        advice = '你的 BMI 低于正常范围。建议适当增加营养摄入，均衡饮食，搭配适量力量训练来增肌。如果长期偏瘦且无法增重，建议咨询医生排除甲亢等潜在问题。';
+      } else if (bmi < 24) {
+        category = '正常 ✅';
+        color = '#22c55e';
+        advice = '恭喜！你的 BMI 在健康范围内。保持均衡饮食和规律运动，这是维持健康体重最好的方式。建议每周至少 150 分钟中等强度运动。';
+      } else if (bmi < 28) {
+        category = '偏胖';
+        color = '#eab308';
+        advice = '你的 BMI 超出正常范围。建议控制饮食热量，减少高糖高脂食物，增加有氧运动。每周减重 0.5-1kg 是安全健康的节奏，避免节食暴瘦。';
+      } else if (bmi < 32) {
+        category = '肥胖';
+        color = '#f97316';
+        advice = '你的 BMI 进入肥胖区间，与健康风险相关（高血压、糖尿病等）。建议在医生或营养师指导下制定减重计划，结合饮食调整和循序渐进的运动。';
+      } else {
+        category = '重度肥胖 ⚠️';
+        color = '#dc2626';
+        advice = '你的 BMI 较高，建议尽快就医评估，排除代谢类疾病。医疗干预（如药物或手术）配合生活方式改变可能是有效方案。';
+      }
+
+      // 显示结果
+      document.getElementById('resultArea').classList.remove('hidden');
+      const resultCard = document.getElementById('resultCard');
+      resultCard.classList.remove('result-pop');
+      void resultCard.offsetWidth; // 触发 reflow
+      resultCard.classList.add('result-pop');
+
+      document.getElementById('bmiValue').textContent = bmiRounded;
+      document.getElementById('bmiValue').style.color = color;
+      document.getElementById('bmiCategory').textContent = category;
+      document.getElementById('bmiCategory').style.color = color;
+      document.getElementById('adviceText').textContent = advice;
+
+      // 指针位置（BMI 10-40 映射到 0%-100%）
+      const clampedBmi = Math.max(10, Math.min(40, bmi));
+      const pct = ((clampedBmi - 10) / 30) * 100;
+      document.getElementById('bmiMarker').style.left = pct + '%';
+
+      // 滚动到结果
+      document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function resetForm() {
+      document.getElementById('heightCm').value = '';
+      document.getElementById('heightFt').value = '';
+      document.getElementById('heightIn').value = '';
+      document.getElementById('weightInput').value = '';
+      document.getElementById('resultArea').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 回车计算
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') calculate();
+      });
+    });
+  </script>
+
+</body>
+</html>
