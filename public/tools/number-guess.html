@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>猜数字 - 小D游戏</title>
+  <meta name="description" content="猜数字小游戏，系统随机生成1~100的数字，用最少次数猜中它！">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    /* 猜测显示 */
+    .guess-display {
+      font-size: 5rem;
+      font-weight: 900;
+      line-height: 1;
+      min-height: 5.5rem;
+      transition: all 0.2s;
+    }
+
+    /* 数字按钮 */
+    .num-btn {
+      width: 72px;
+      height: 72px;
+      border-radius: 12px;
+      font-size: 1.75rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.1s;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .num-btn:active { transform: scale(0.9); }
+    .num-btn.digit {
+      background: #1a1a1a;
+      color: #fff;
+      border: 2px solid #333;
+    }
+    .num-btn.digit:hover { background: #262626; border-color: #555; }
+    .num-btn.action {
+      background: transparent;
+      color: #888;
+      border: 2px solid #333;
+    }
+    .num-btn.action:hover { border-color: #666; color: #fff; }
+    .num-btn.submit {
+      background: #dc2626;
+      color: #fff;
+      border: 2px solid #dc2626;
+    }
+    .num-btn.submit:hover { background: #b91c1c; }
+    .num-btn.submit:active { background: #991b1b; }
+
+    /* 反馈动画 */
+    .shake { animation: shake 0.4s ease; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-5px); }
+      80% { transform: translateX(5px); }
+    }
+    .bounce { animation: bounce 0.5s ease; }
+    @keyframes bounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.2); }
+      60% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+
+    /* 提示标签 */
+    .hint-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      animation: tagIn 0.3s ease;
+    }
+    @keyframes tagIn {
+      0% { transform: scale(0) translateY(10px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* 猜测历史 */
+    .history-item {
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      0% { transform: translateX(-20px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    /* 胜利庆祝 */
+    .win-overlay {
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    .win-card {
+      animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 五彩纸屑 */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      z-index: 100;
+      pointer-events: none;
+      animation: confettiFall linear forwards;
+    }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+
+    /* 范围条 */
+    .range-bar {
+      height: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+    }
+    .range-fill {
+      position: absolute;
+      height: 100%;
+      background: linear-gradient(90deg, #dc2626, #f87171);
+      border-radius: 4px;
+      transition: left 0.5s ease, width 0.5s ease;
+    }
+    .range-marker {
+      position: absolute;
+      top: -6px;
+      width: 4px;
+      height: 20px;
+      background: #fff;
+      border-radius: 2px;
+      transition: left 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 导航 -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-zinc-800">
+    <div class="w-full mx-auto px-6 py-4 flex justify-between items-center">
+      <a href="/tool" class="text-2xl font-black tracking-tighter hover:text-red-500 transition-colors">← 工具箱</a>
+      <span class="text-sm font-bold tracking-widest text-zinc-500">猜数字</span>
+    </div>
+  </nav>
+
+  <main class="min-h-screen pt-20 pb-12 px-6 flex items-center justify-center">
+    <div class="w-full max-w-md">
+
+      <!-- 标题 -->
+      <div class="text-center mb-6">
+        <span class="text-red-500 font-black text-sm tracking-widest">// GAME</span>
+        <h1 class="text-4xl md:text-5xl font-black leading-none mt-2">
+          猜<span class="text-red-500">数字</span>
+        </h1>
+        <p class="text-zinc-500 mt-2 text-sm" id="statusText">我想了一个 1~100 的数字</p>
+      </div>
+
+      <!-- 猜测次数 + 范围 -->
+      <div class="flex justify-between items-center mb-4 text-sm">
+        <span class="text-zinc-500">第 <span id="guessCount" class="text-white font-black text-base">0</span> 次</span>
+        <span class="text-zinc-500">范围 <span id="rangeText" class="text-red-400 font-bold">1 ~ 100</span></span>
+      </div>
+
+      <!-- 范围可视化条 -->
+      <div class="range-bar mb-6">
+        <div class="range-fill" id="rangeFill" style="left: 0%; width: 100%;"></div>
+      </div>
+
+      <!-- 当前猜测显示 -->
+      <div class="text-center mb-6">
+        <div class="guess-display text-white" id="guessDisplay">?</div>
+        <div id="hintArea" class="mt-2 min-h-[28px]"></div>
+      </div>
+
+      <!-- 数字键盘 3x3 -->
+      <div class="flex flex-col items-center gap-2 mb-4" id="numpad">
+        <div class="flex gap-2">
+          <button class="num-btn digit" onclick="pressDigit(1)">1</button>
+          <button class="num-btn digit" onclick="pressDigit(2)">2</button>
+          <button class="num-btn digit" onclick="pressDigit(3)">3</button>
+        </div>
+        <div class="flex gap-2">
+          <button class="num-btn digit" onclick="pressDigit(4)">4</button>
+          <button class="num-btn digit" onclick="pressDigit(5)">5</button>
+          <button class="num-btn digit" onclick="pressDigit(6)">6</button>
+        </div>
+        <div class="flex gap-2">
+          <button class="num-btn digit" onclick="pressDigit(7)">7</button>
+          <button class="num-btn digit" onclick="pressDigit(8)">8</button>
+          <button class="num-btn digit" onclick="pressDigit(9)">9</button>
+        </div>
+        <!-- 底行: 0 + 清除 + 确认 -->
+        <div class="flex gap-2">
+          <button class="num-btn digit" onclick="pressDigit(0)">0</button>
+          <button class="num-btn action" onclick="clearGuess()">清除</button>
+          <button class="num-btn submit" onclick="submitGuess()">确认</button>
+        </div>
+      </div>
+
+      <!-- 猜测历史 -->
+      <div id="historyArea" class="mt-6 flex flex-wrap gap-2 justify-center min-h-[32px]">
+      </div>
+
+    </div>
+  </main>
+
+  <!-- 胜利遮罩 -->
+  <div id="winOverlay" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden win-overlay">
+    <div class="win-card bg-zinc-900 border border-zinc-700 rounded-2xl p-8 md:p-10 text-center max-w-sm mx-4">
+      <div class="text-6xl mb-4">🎉</div>
+      <h2 class="text-3xl font-black mb-2">猜中了！</h2>
+      <p class="text-zinc-400 mb-1">答案是</p>
+      <p class="text-6xl font-black text-red-500 mb-4" id="winNumber">--</p>
+      <p class="text-zinc-400 mb-6">你用了 <span id="winCount" class="text-white font-bold">0</span> 次猜中</p>
+      <button onclick="newGame()"
+        class="w-full bg-red-600 text-white py-4 font-black text-lg rounded-xl hover:bg-red-700 transition-colors active:scale-95">
+        再来一局 →
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ========== 音效（Web Audio API，无需外部文件） ==========
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return audioCtx;
+    }
+
+    function playTone(freq, duration, type = 'sine', volume = 0.15) {
+      try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function playClick() { playTone(800, 0.06, 'square', 0.05); }
+    function playTooHigh() {
+      playTone(500, 0.15, 'sawtooth', 0.1);
+      setTimeout(() => playTone(350, 0.2, 'sawtooth', 0.08), 100);
+    }
+    function playTooLow() {
+      playTone(300, 0.15, 'sawtooth', 0.1);
+      setTimeout(() => playTone(200, 0.2, 'sawtooth', 0.08), 100);
+    }
+    function playWin() {
+      const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
+      notes.forEach((f, i) => {
+        setTimeout(() => playTone(f, 0.3, 'sine', 0.15), i * 120);
+      });
+      // 和弦
+      setTimeout(() => {
+        playTone(523, 0.8, 'sine', 0.1);
+        playTone(659, 0.8, 'sine', 0.1);
+        playTone(784, 0.8, 'sine', 0.1);
+      }, 500);
+    }
+
+    // ========== 游戏状态 ==========
+    let target = 0;
+    let guessCount = 0;
+    let currentInput = '';
+    let rangeMin = 1;
+    let rangeMax = 100;
+    let gameActive = true;
+
+    // ========== DOM ==========
+    const $ = id => document.getElementById(id);
+
+    // ========== 游戏逻辑 ==========
+    function newGame() {
+      target = Math.floor(Math.random() * 100) + 1;
+      guessCount = 0;
+      currentInput = '';
+      rangeMin = 1;
+      rangeMax = 100;
+      gameActive = true;
+
+      $('guessDisplay').textContent = '?';
+      $('guessDisplay').className = 'guess-display text-white';
+      $('guessCount').textContent = '0';
+      $('rangeText').textContent = '1 ~ 100';
+      $('hintArea').innerHTML = '';
+      $('historyArea').innerHTML = '';
+      $('statusText').textContent = '我想了一个 1~100 的数字';
+      $('winOverlay').classList.add('hidden');
+
+      updateRangeBar();
+      enableNumpad(true);
+    }
+
+    function pressDigit(d) {
+ if (!gameActive) return;
+      if (currentInput.length >= 3) return; // 最多3位
+      playClick();
+      currentInput += d;
+      $('guessDisplay').textContent = currentInput;
+      $('guessDisplay').classList.add('bounce');
+      setTimeout(() => $('guessDisplay').classList.remove('bounce'), 500);
+    }
+
+    function clearGuess() {
+      if (!gameActive) return;
+      playClick();
+      currentInput = '';
+      $('guessDisplay').textContent = '?';
+    }
+
+    function submitGuess() {
+      if (!gameActive) return;
+      if (currentInput === '') return;
+
+      const guess = parseInt(currentInput, 10);
+      if (isNaN(guess) || guess < 1 || guess > 100) {
+        shakeDisplay();
+        return;
+      }
+
+      guessCount++;
+      $('guessCount').textContent = guessCount;
+
+      if (guess > target) {
+        // 太大了
+        playTooHigh();
+        rangeMax = Math.min(rangeMax, guess - 1);
+        addHistory(guess, 'high');
+        $('guessDisplay').className = 'guess-display text-red-400 shake';
+        setTimeout(() => $('guessDisplay').className = 'guess-display text-white', 400);
+      } else if (guess < target) {
+        // 太小了
+        playTooLow();
+        rangeMin = Math.max(rangeMin, guess + 1);
+        addHistory(guess, 'low');
+        $('guessDisplay').className = 'guess-display text-blue-400 shake';
+        setTimeout(() => $('guessDisplay').className = 'guess-display text-white', 400);
+      } else {
+        // 猜中了！
+        playWin();
+        gameActive = false;
+        enableNumpad(false);
+        $('guessDisplay').className = 'guess-display text-green-400 bounce';
+        $('statusText').textContent = '🎉 恭喜猜中了！';
+        addHistory(guess, 'correct');
+
+        // 延迟弹出胜利界面 + 撒花
+        setTimeout(() => {
+          $('winNumber').textContent = target;
+          $('winCount').textContent = guessCount;
+          $('winOverlay').classList.remove('hidden');
+          launchConfetti();
+        }, 800);
+
+        currentInput = '';
+        updateRangeInfo();
+        return;
+      }
+
+      currentInput = '';
+      updateRangeInfo();
+    }
+
+    function shakeDisplay() {
+      $('guessDisplay').classList.add('shake');
+      setTimeout(() => $('guessDisplay').classList.remove('shake'), 400);
+    }
+
+    function updateRangeInfo() {
+ $('rangeText').textContent = `${rangeMin} ~ ${rangeMax}`;
+      updateRangeBar();
+    }
+
+    function updateRangeBar() {
+      const left = ((rangeMin - 1) / 99) * 100;
+      const width = ((rangeMax - rangeMin) / 99) * 100;
+      $('rangeFill').style.left = left + '%';
+      $('rangeFill').style.width = Math.max(width, 1) + '%';
+    }
+
+    function addHistory(num, type) {
+      const area = $('historyArea');
+      let color, label;
+      if (type === 'high') { color = 'bg-red-900/60 text-red-300'; label = num + ' ↓'; }
+      else if (type === 'low') { color = 'bg-blue-900/60 text-blue-300'; label = num + ' ↑'; }
+      else { color = 'bg-green-900/60 text-green-300'; label = num + ' ✓'; }
+
+      const tag = document.createElement('span');
+      tag.className = `hint-tag ${color} history-item`;
+      tag.textContent = label;
+      area.appendChild(tag);
+      area.scrollLeft = area.scrollWidth;
+    }
+
+    function enableNumpad(enabled) {
+      $('numpad').querySelectorAll('button').forEach(b => {
+        b.disabled = !enabled;
+        b.style.opacity = enabled ? '1' : '0.3';
+        b.style.pointerEvents = enabled ? 'auto' : 'none';
+      });
+    }
+
+    // ========== 五彩纸屑 ==========
+    function launchConfetti() {
+      const colors = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+      for (let i = 0; i < 80; i++) {
+        setTimeout(() => {
+ const el = document.createElement('div');
+          el.className = 'confetti';
+          el.style.left = Math.random() * 100 + 'vw';
+          el.style.top = '-10px';
+          el.style.background = colors[Math.floor(Math.random() * colors.length)];
+          el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+          el.style.width = (Math.random() * 8 + 5) + 'px';
+          el.style.height = (Math.random() * 8 + 5) + 'px';
+          el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 4000);
+        }, i * 20);
+      }
+    }
+
+    // ========== 键盘支持 ==========
+    document.addEventListener('keydown', e => {
+      if (!gameActive) return;
+      if (e.key >= '0' && e.key <= '9') { pressDigit(parseInt(e.key)); e.preventDefault(); }
+      else if (e.key === 'Backspace') { clearGuess(); e.preventDefault(); }
+      else if (e.key === 'Enter') { submitGuess(); e.preventDefault(); }
+    });
+
+    // ========== 启动 ==========
+    newGame();
+  </script>
+
+</body>
+</html>
