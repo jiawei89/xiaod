@@ -343,7 +343,17 @@
 
       const guess = parseInt(currentInput, 10);
       if (isNaN(guess) || guess < 1 || guess > 100) {
+        showHint("请输入 1~100 之间的数字", "#f87171");
         shakeDisplay();
+        currentInput = "";
+        $("guessDisplay").textContent = "?";
+        return;
+      }
+      if (guess < rangeMin || guess > rangeMax) {
+        showHint("当前范围是 " + rangeMin + "~" + rangeMax + "，" + guess + " 已排除", "#fbbf24");
+        shakeDisplay();
+        currentInput = "";
+        $("guessDisplay").textContent = "?";
         return;
       }
 
@@ -389,6 +399,12 @@
       currentInput = '';
       updateRangeInfo();
     }
+
+    function showHint(text, color) {
+      $("hintArea").innerHTML = "<span style="color:" + color + ";font-weight:800;font-size:0.875rem">" + text + "</span>";
+      setTimeout(() => $("hintArea").innerHTML = "", 2000);
+    }
+
 
     function shakeDisplay() {
       $('guessDisplay').classList.add('shake');
