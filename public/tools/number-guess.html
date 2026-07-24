@@ -249,14 +249,14 @@
       return audioCtx;
     }
 
-    function playTone(freq, duration, type = 'sine', volume = 0.15) {
+    function playTone(freq, duration, type, volume) {
       try {
         const ctx = getAudioCtx();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-        osc.type = type;
+        osc.type = type || 'sine';
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.setValueAtTime(volume || 0.15, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -268,42 +268,40 @@
     function playClick() { playTone(800, 0.06, 'square', 0.05); }
     function playTooHigh() {
       playTone(500, 0.15, 'sawtooth', 0.1);
-      setTimeout(() => playTone(350, 0.2, 'sawtooth', 0.08), 100);
+      setTimeout(function() { playTone(350, 0.2, 'sawtooth', 0.08); }, 100);
     }
     function playTooLow() {
       playTone(300, 0.15, 'sawtooth', 0.1);
-      setTimeout(() => playTone(200, 0.2, 'sawtooth', 0.08), 100);
+      setTimeout(function() { playTone(200, 0.2, 'sawtooth', 0.08); }, 100);
     }
     function playWin() {
-      const notes = [523, 659, 784, 1047]; // C5 E5 G5 C6
-      notes.forEach((f, i) => {
-        setTimeout(() => playTone(f, 0.3, 'sine', 0.15), i * 120);
+      var notes = [523, 659, 784, 1047];
+      notes.forEach(function(f, i) {
+        setTimeout(function() { playTone(f, 0.3, 'sine', 0.15); }, i * 120);
       });
-      // 和弦
-      setTimeout(() => {
+      setTimeout(function() {
         playTone(523, 0.8, 'sine', 0.1);
         playTone(659, 0.8, 'sine', 0.1);
         playTone(784, 0.8, 'sine', 0.1);
       }, 500);
     }
-    // ========== 数字转中文（搞怪语音用）==========
+
+    // ========== 数字转中文（搞怪语音用） ==========
     function numToZh(n) {
       if (n <= 0 || n > 100) return String(n);
-      const d = ["零","一","二","三","四","五","六","七","八","九"];
+      var d = ['零','一','二','三','四','五','六','七','八','九'];
       if (n < 10) return d[n];
-      if (n === 10) return "十";
-      if (n < 20) return "十" + d[n % 10];
-      if (n < 100) return d[Math.floor(n / 10)] + "十" + (n % 10 ? d[n % 10] : "");
-      if (n === 100) return "一百";
-      return "一百";
+      if (n === 10) return '十';
+      if (n < 20) return '十' + d[n % 10];
+      if (n < 100) return d[Math.floor(n / 10)] + '十' + (n % 10 ? d[n % 10] : '');
+      if (n === 100) return '一百';
+      return '一百';
     }
 
     function speakRange() {
       try {
-        const utter = new SpeechSynthesisUtterance(
-          numToZh(rangeMin) + "到" + numToZh(rangeMax)
-        );
-        utter.lang = "zh-CN";
+        var utter = new SpeechSynthesisUtterance(numToZh(rangeMin) + '到' + numToZh(rangeMax));
+        utter.lang = 'zh-CN';
         utter.rate = 1.6;
         utter.pitch = 1.8;
         utter.volume = 0.8;
@@ -311,17 +309,16 @@
       } catch(e) {}
     }
 
-
     // ========== 游戏状态 ==========
-    let target = 0;
-    let guessCount = 0;
-    let currentInput = '';
-    let rangeMin = 1;
-    let rangeMax = 100;
-    let gameActive = true;
+    var target = 0;
+    var guessCount = 0;
+    var currentInput = '';
+    var rangeMin = 1;
+    var rangeMax = 100;
+    var gameActive = true;
 
     // ========== DOM ==========
-    const $ = id => document.getElementById(id);
+    var $ = function(id) { return document.getElementById(id); };
 
     // ========== 游戏逻辑 ==========
     function newGame() {
@@ -346,13 +343,13 @@
     }
 
     function pressDigit(d) {
- if (!gameActive) return;
-      if (currentInput.length >= 3) return; // 最多3位
+      if (!gameActive) return;
+      if (currentInput.length >= 3) return;
       playClick();
       currentInput += d;
       $('guessDisplay').textContent = currentInput;
       $('guessDisplay').classList.add('bounce');
-      setTimeout(() => $('guessDisplay').classList.remove('bounce'), 500);
+      setTimeout(function() { $('guessDisplay').classList.remove('bounce'); }, 500);
     }
 
     function clearGuess() {
@@ -366,19 +363,19 @@
       if (!gameActive) return;
       if (currentInput === '') return;
 
-      const guess = parseInt(currentInput, 10);
+      var guess = parseInt(currentInput, 10);
       if (isNaN(guess) || guess < 1 || guess > 100) {
-        showHint("请输入 1~100 之间的数字", "#f87171");
+        showHint('请输入 1~100 之间的数字', '#f87171');
         shakeDisplay();
-        currentInput = "";
-        $("guessDisplay").textContent = "?";
+        currentInput = '';
+        $('guessDisplay').textContent = '?';
         return;
       }
       if (guess < rangeMin || guess > rangeMax) {
-        showHint("当前范围是 " + rangeMin + "~" + rangeMax + "，" + guess + " 已排除", "#fbbf24");
+        showHint('当前范围是 ' + rangeMin + '~' + rangeMax + '，' + guess + ' 已排除', '#fbbf24');
         shakeDisplay();
-        currentInput = "";
-        $("guessDisplay").textContent = "?";
+        currentInput = '';
+        $('guessDisplay').textContent = '?';
         return;
       }
 
@@ -386,38 +383,32 @@
       $('guessCount').textContent = guessCount;
 
       if (guess > target) {
-        // 太大了
         playTooHigh();
         rangeMax = Math.min(rangeMax, guess - 1);
         speakRange();
         addHistory(guess, 'high');
         $('guessDisplay').className = 'guess-display text-red-400 shake';
-        setTimeout(() => $('guessDisplay').className = 'guess-display text-white', 400);
+        setTimeout(function() { $('guessDisplay').className = 'guess-display text-white'; }, 400);
       } else if (guess < target) {
-        // 太小了
         playTooLow();
         rangeMin = Math.max(rangeMin, guess + 1);
         speakRange();
         addHistory(guess, 'low');
         $('guessDisplay').className = 'guess-display text-blue-400 shake';
-        setTimeout(() => $('guessDisplay').className = 'guess-display text-white', 400);
+        setTimeout(function() { $('guessDisplay').className = 'guess-display text-white'; }, 400);
       } else {
-        // 猜中了！
         playWin();
         gameActive = false;
         enableNumpad(false);
         $('guessDisplay').className = 'guess-display text-green-400 bounce';
         $('statusText').textContent = '🎉 恭喜猜中了！';
         addHistory(guess, 'correct');
-
-        // 延迟弹出胜利界面 + 撒花
-        setTimeout(() => {
+        setTimeout(function() {
           $('winNumber').textContent = target;
           $('winCount').textContent = guessCount;
           $('winOverlay').classList.remove('hidden');
           launchConfetti();
         }, 800);
-
         currentInput = '';
         updateRangeInfo();
         return;
@@ -428,44 +419,42 @@
     }
 
     function showHint(text, color) {
-      $("hintArea").innerHTML = "<span style="color:" + color + ";font-weight:800;font-size:0.875rem">" + text + "</span>";
-      setTimeout(() => $("hintArea").innerHTML = "", 2000);
+      $('hintArea').innerHTML = '<span style="color:' + color + ';font-weight:800;font-size:0.875rem">' + text + '</span>';
+      setTimeout(function() { $('hintArea').innerHTML = ''; }, 2000);
     }
-
 
     function shakeDisplay() {
       $('guessDisplay').classList.add('shake');
-      setTimeout(() => $('guessDisplay').classList.remove('shake'), 400);
+      setTimeout(function() { $('guessDisplay').classList.remove('shake'); }, 400);
     }
 
     function updateRangeInfo() {
- $('rangeText').textContent = `${rangeMin} ~ ${rangeMax}`;
+      $('rangeText').textContent = rangeMin + ' ~ ' + rangeMax;
       updateRangeBar();
     }
 
     function updateRangeBar() {
-      const left = ((rangeMin - 1) / 99) * 100;
-      const width = ((rangeMax - rangeMin) / 99) * 100;
+      var left = ((rangeMin - 1) / 99) * 100;
+      var width = ((rangeMax - rangeMin) / 99) * 100;
       $('rangeFill').style.left = left + '%';
       $('rangeFill').style.width = Math.max(width, 1) + '%';
     }
 
     function addHistory(num, type) {
-      const area = $('historyArea');
-      let color, label;
+      var area = $('historyArea');
+      var color, label;
       if (type === 'high') { color = 'bg-red-900/60 text-red-300'; label = num + ' ↓'; }
       else if (type === 'low') { color = 'bg-blue-900/60 text-blue-300'; label = num + ' ↑'; }
       else { color = 'bg-green-900/60 text-green-300'; label = num + ' ✓'; }
-
-      const tag = document.createElement('span');
-      tag.className = `hint-tag ${color} history-item`;
+      var tag = document.createElement('span');
+      tag.className = 'hint-tag ' + color + ' history-item';
       tag.textContent = label;
       area.appendChild(tag);
       area.scrollLeft = area.scrollWidth;
     }
 
     function enableNumpad(enabled) {
-      $('numpad').querySelectorAll('button').forEach(b => {
+      $('numpad').querySelectorAll('button').forEach(function(b) {
         b.disabled = !enabled;
         b.style.opacity = enabled ? '1' : '0.3';
         b.style.pointerEvents = enabled ? 'auto' : 'none';
@@ -474,26 +463,28 @@
 
     // ========== 五彩纸屑 ==========
     function launchConfetti() {
-      const colors = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
-      for (let i = 0; i < 80; i++) {
-        setTimeout(() => {
- const el = document.createElement('div');
-          el.className = 'confetti';
-          el.style.left = Math.random() * 100 + 'vw';
-          el.style.top = '-10px';
-          el.style.background = colors[Math.floor(Math.random() * colors.length)];
-          el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-          el.style.width = (Math.random() * 8 + 5) + 'px';
-          el.style.height = (Math.random() * 8 + 5) + 'px';
-          el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 4000);
-        }, i * 20);
+      var colors = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+      for (var i = 0; i < 80; i++) {
+        (function(idx) {
+          setTimeout(function() {
+            var el = document.createElement('div');
+            el.className = 'confetti';
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.top = '-10px';
+            el.style.background = colors[Math.floor(Math.random() * colors.length)];
+            el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            el.style.width = (Math.random() * 8 + 5) + 'px';
+            el.style.height = (Math.random() * 8 + 5) + 'px';
+            el.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+            document.body.appendChild(el);
+            setTimeout(function() { el.remove(); }, 4000);
+          }, idx * 20);
+        })(i);
       }
     }
 
     // ========== 键盘支持 ==========
-    document.addEventListener('keydown', e => {
+    document.addEventListener('keydown', function(e) {
       if (!gameActive) return;
       if (e.key >= '0' && e.key <= '9') { pressDigit(parseInt(e.key)); e.preventDefault(); }
       else if (e.key === 'Backspace') { clearGuess(); e.preventDefault(); }
